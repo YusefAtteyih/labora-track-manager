@@ -25,7 +25,7 @@ export interface Booking {
   notes?: string;
 }
 
-export const useBookingData = () => {
+export const useBookingData = (userId?: string) => {
   const queryClient = useQueryClient();
 
   // Set up real-time subscription
@@ -52,13 +52,20 @@ export const useBookingData = () => {
   }, [queryClient]);
 
   return useQuery({
-    queryKey: ['bookings'],
+    queryKey: ['bookings', userId],
     queryFn: async (): Promise<Booking[]> => {
-      // First get all the bookings
-      const { data: bookingsData, error: bookingsError } = await supabase
+      // Build query based on whether a userId is provided
+      let query = supabase
         .from('bookings')
         .select('*, facility_id')
         .order('start_date', { ascending: false });
+      
+      // If userId is provided, filter by that user
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+      
+      const { data: bookingsData, error: bookingsError } = await query;
 
       if (bookingsError) {
         console.error('Error fetching bookings:', bookingsError);

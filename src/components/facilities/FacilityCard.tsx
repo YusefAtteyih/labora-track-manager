@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Clock } from 'lucide-react';
@@ -39,6 +38,14 @@ const FacilityCard: React.FC<FacilityCardProps> = ({ facility }) => {
       default:
         return type.charAt(0).toUpperCase() + type.slice(1);
     }
+  };
+
+  const handleViewDetails = () => {
+    navigate(`/facilities/${facility.id}`);
+  };
+
+  const handleBookNow = () => {
+    navigate(`/facilities/${facility.id}?book=true`);
   };
 
   return (
@@ -83,10 +90,14 @@ const FacilityCard: React.FC<FacilityCardProps> = ({ facility }) => {
       <Separator />
       
       <CardFooter className="flex justify-between pt-4">
-        <Button variant="outline" size="sm" onClick={() => navigate(`/facilities/${facility.id}`)}>
+        <Button variant="outline" size="sm" onClick={handleViewDetails}>
           View Details
         </Button>
-        <Button size="sm">
+        <Button 
+          size="sm" 
+          onClick={handleBookNow}
+          disabled={facility.status !== 'available'}
+        >
           <Calendar className="mr-2 h-4 w-4" />
           Book Now
         </Button>

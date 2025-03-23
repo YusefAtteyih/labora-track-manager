@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Facilities from "./pages/Facilities";
+import FacilityDetails from "./pages/FacilityDetails";
 import Bookings from "./pages/Bookings";
 import Purchases from "./pages/Purchases";
 import Reports from "./pages/Reports";
@@ -103,6 +104,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Facilities />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/facilities/:id"
+              element={
+                <ProtectedRoute>
+                  <FacilityDetails />
                 </ProtectedRoute>
               }
             />
