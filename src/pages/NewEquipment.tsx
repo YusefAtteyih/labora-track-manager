@@ -1,33 +1,33 @@
 
 import React from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import AddLabForm from '@/components/labs/AddLabForm';
+import AddEquipmentForm from '@/components/equipment/AddEquipmentForm';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
-const NewLab = () => {
+const NewEquipment = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'org_admin';
 
   // Redirect non-admin users
   if (!isAdmin) {
-    return <Navigate to="/labs" replace />;
+    return <Navigate to="/equipment" replace />;
   }
 
   return (
     <MainLayout>
       <div className="space-y-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Add New Laboratory</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Add New Equipment</h2>
           <p className="text-muted-foreground">
-            Create a new research, teaching, or specialized laboratory
+            Add laboratory equipment that can be reserved and managed
           </p>
         </div>
         
-        <AddLabForm returnPath="/labs" />
+        <AddEquipmentForm returnPath="/equipment" />
       </div>
     </MainLayout>
   );
 };
 
-export default NewLab;
+export default NewEquipment;

@@ -14,8 +14,10 @@ export type Database = {
           attendees: number | null
           created_at: string | null
           end_date: string
+          equipment_id: string | null
           facility_id: string | null
           id: string
+          lab_id: string | null
           notes: string | null
           purpose: string | null
           start_date: string
@@ -29,8 +31,10 @@ export type Database = {
           attendees?: number | null
           created_at?: string | null
           end_date: string
+          equipment_id?: string | null
           facility_id?: string | null
           id?: string
+          lab_id?: string | null
           notes?: string | null
           purpose?: string | null
           start_date: string
@@ -44,8 +48,10 @@ export type Database = {
           attendees?: number | null
           created_at?: string | null
           end_date?: string
+          equipment_id?: string | null
           facility_id?: string | null
           id?: string
+          lab_id?: string | null
           notes?: string | null
           purpose?: string | null
           start_date?: string
@@ -57,10 +63,86 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "bookings_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_facility_id_fkey"
             columns: ["facility_id"]
             isOneToOne: false
             referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_lab_id_fkey"
+            columns: ["lab_id"]
+            isOneToOne: false
+            referencedRelation: "labs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          features: string[] | null
+          id: string
+          image: string | null
+          lab_id: string | null
+          last_maintenance: string | null
+          maintenance_schedule: string | null
+          manufacturer: string | null
+          model: string | null
+          name: string
+          purchase_date: string | null
+          quantity: number | null
+          status: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          image?: string | null
+          lab_id?: string | null
+          last_maintenance?: string | null
+          maintenance_schedule?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          name: string
+          purchase_date?: string | null
+          quantity?: number | null
+          status: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          image?: string | null
+          lab_id?: string | null
+          last_maintenance?: string | null
+          maintenance_schedule?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          name?: string
+          purchase_date?: string | null
+          quantity?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_lab_id_fkey"
+            columns: ["lab_id"]
+            isOneToOne: false
+            referencedRelation: "labs"
             referencedColumns: ["id"]
           },
         ]
@@ -174,6 +256,7 @@ export type Database = {
           created_at: string
           facility_id: string | null
           id: string
+          lab_id: string | null
           location: string
           name: string
           quantity: number
@@ -186,6 +269,7 @@ export type Database = {
           created_at?: string
           facility_id?: string | null
           id?: string
+          lab_id?: string | null
           location: string
           name: string
           quantity?: number
@@ -198,6 +282,7 @@ export type Database = {
           created_at?: string
           facility_id?: string | null
           id?: string
+          lab_id?: string | null
           location?: string
           name?: string
           quantity?: number
@@ -211,6 +296,72 @@ export type Database = {
             columns: ["facility_id"]
             isOneToOne: false
             referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_items_lab_id_fkey"
+            columns: ["lab_id"]
+            isOneToOne: false
+            referencedRelation: "labs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      labs: {
+        Row: {
+          available_for: string[] | null
+          capacity: number | null
+          created_at: string | null
+          department: string | null
+          description: string | null
+          faculty_id: string | null
+          features: string[] | null
+          id: string
+          image: string | null
+          location: string | null
+          name: string
+          open_hours: string | null
+          requires_approval: boolean | null
+          status: string
+        }
+        Insert: {
+          available_for?: string[] | null
+          capacity?: number | null
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          faculty_id?: string | null
+          features?: string[] | null
+          id?: string
+          image?: string | null
+          location?: string | null
+          name: string
+          open_hours?: string | null
+          requires_approval?: boolean | null
+          status: string
+        }
+        Update: {
+          available_for?: string[] | null
+          capacity?: number | null
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          faculty_id?: string | null
+          features?: string[] | null
+          id?: string
+          image?: string | null
+          location?: string | null
+          name?: string
+          open_hours?: string | null
+          requires_approval?: boolean | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "labs_faculty_id_fkey"
+            columns: ["faculty_id"]
+            isOneToOne: false
+            referencedRelation: "faculties"
             referencedColumns: ["id"]
           },
         ]

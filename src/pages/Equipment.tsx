@@ -1,35 +1,44 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Microscope, Plus, Search, Filter, CircleSlash, CheckCircle2 } from 'lucide-react';
+import { Tool, Plus, Search, Filter, CircleSlash, CheckCircle2 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import LabCard from '@/components/labs/LabCard';
-import { useLabsData } from '@/hooks/useLabsData';
+import EquipmentCard from '@/components/equipment/EquipmentCard';
+import { useEquipmentData } from '@/hooks/useEquipmentData';
 
-const Labs = () => {
+const Equipment = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'org_admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
-  // Fetch all labs data
-  const { data: labs, isLoading } = useLabsData();
+  // Fetch all equipment data
+  const { data: equipment, isLoading } = useEquipmentData();
 
-  // Apply filtering based on search term and status
-  const filteredLabs = labs?.filter(lab => {
+  // Get unique categories for filtering
+  const categories = React.useMemo(() => {
+    if (!equipment) return [];
+    const uniqueCategories = new Set(equipment.map(item => item.category).filter(Boolean));
+    return Array.from(uniqueCategories);
+  }, [equipment]);
+
+  // Apply filtering based on search term and filters
+  const filteredEquipment = equipment?.filter(item => {
     const matchesSearch = 
-      lab.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (lab.description && lab.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (lab.location && lab.location.toLowerCase().includes(searchTerm.toLowerCase()));
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesStatus = statusFilter === 'all' || lab.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
   return (
@@ -38,19 +47,19 @@ const Labs = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold flex items-center">
-              <Microscope className="h-8 w-8 mr-2 text-lab-600" />
-              Labs
+              <Tool className="h-8 w-8 mr-2 text-blue-600" />
+              Equipment
             </h1>
             <p className="text-muted-foreground">
-              Browse and manage laboratory facilities
+              Browse and manage laboratory equipment
             </p>
           </div>
 
           {isAdmin && (
-            <Link to="/labs/new">
+            <Link to="/equipment/new">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Lab
+                Add Equipment
               </Button>
             </Link>
           )}
@@ -61,7 +70,7 @@ const Labs = () => {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search labs..."
+              placeholder="Search equipment..."
               className="pl-8 w-full"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -72,25 +81,7 @@ const Labs = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="sm:w-[180px] justify-start">
                 <Filter className="mr-2 h-4 w-4" />
-                {statusFilter === 'all' && 'All Status'}
-                {statusFilter === 'available' && (
-                  <span className="flex items-center">
-                    <CheckCircle2 className="mr-1 h-3 w-3 text-green-500" />
-                    Available
-                  </span>
-                )}
-                {statusFilter === 'booked' && (
-                  <span className="flex items-center">
-                    <CircleSlash className="mr-1 h-3 w-3 text-amber-500" />
-                    Booked
-                  </span>
-                )}
-                {statusFilter === 'maintenance' && (
-                  <span className="flex items-center">
-                    <CircleSlash className="mr-1 h-3 w-3 text-red-500" />
-                    Maintenance
-                  </span>
-                )}
+                {statusFilter === 'all' ? 'All Status' : `Status: ${statusFilter}`}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -102,7 +93,7 @@ const Labs = () => {
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="booked">
                   <CircleSlash className="mr-1 h-3 w-3 text-amber-500" />
-                  Booked
+                  In Use
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="maintenance">
                   <CircleSlash className="mr-1 h-3 w-3 text-red-500" />
@@ -111,21 +102,42 @@ const Labs = () => {
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {categories.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="sm:w-[180px] justify-start">
+                  <Filter className="mr-2 h-4 w-4" />
+                  {categoryFilter === 'all' ? 'All Categories' : categoryFilter}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuRadioGroup value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <DropdownMenuRadioItem value="all">All Categories</DropdownMenuRadioItem>
+                  {categories.map(category => (
+                    <DropdownMenuRadioItem key={category} value={category}>
+                      {category}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {isLoading ? (
           <div className="text-center py-10">
-            <p className="text-muted-foreground">Loading labs...</p>
+            <p className="text-muted-foreground">Loading equipment...</p>
           </div>
-        ) : filteredLabs && filteredLabs.length > 0 ? (
+        ) : filteredEquipment && filteredEquipment.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredLabs.map((lab) => (
-              <LabCard key={lab.id} lab={lab} />
+            {filteredEquipment.map((item) => (
+              <EquipmentCard key={item.id} equipment={item} />
             ))}
           </div>
         ) : (
           <div className="text-center py-10">
-            <p className="text-muted-foreground">No labs found matching your criteria</p>
+            <p className="text-muted-foreground">No equipment found matching your criteria</p>
             {searchTerm && (
               <Button 
                 variant="link" 
@@ -142,4 +154,4 @@ const Labs = () => {
   );
 };
 
-export default Labs;
+export default Equipment;
