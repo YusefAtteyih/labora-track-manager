@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, FilterIcon, Plus } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -76,7 +77,6 @@ const Facilities = () => {
             <TabsTrigger value="all">All Facilities</TabsTrigger>
             <TabsTrigger value="lab">Laboratories</TabsTrigger>
             <TabsTrigger value="equipment">Equipment</TabsTrigger>
-            <TabsTrigger value="classroom">Classrooms</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="mt-0">
@@ -118,19 +118,6 @@ const Facilities = () => {
             {/* Equipment tab content */}
             {isLoading ? (
               <p className="text-muted-foreground text-center py-10">Loading equipment...</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredFacilities?.map((facility) => (
-                  <FacilityCard key={facility.id} facility={facility} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="classroom" className="mt-0">
-            {/* Classroom tab content */}
-            {isLoading ? (
-              <p className="text-muted-foreground text-center py-10">Loading classrooms...</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredFacilities?.map((facility) => (

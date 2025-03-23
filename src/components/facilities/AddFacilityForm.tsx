@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,7 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 // Schema for facility form validation
 const facilityFormSchema = z.object({
   name: z.string().min(3, { message: 'Facility name must be at least 3 characters' }),
-  type: z.enum(['lab', 'equipment', 'classroom'], { 
+  type: z.enum(['lab', 'equipment'], { 
     required_error: 'Please select a facility type',
   }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters' }),
@@ -157,7 +156,6 @@ const AddFacilityForm = () => {
                       >
                         <option value="lab">Laboratory</option>
                         <option value="equipment">Equipment</option>
-                        <option value="classroom">Classroom</option>
                       </select>
                     </FormControl>
                     <FormMessage />

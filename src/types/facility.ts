@@ -2,7 +2,7 @@
 export interface Facility {
   id: string;
   name: string;
-  type: 'lab' | 'equipment' | 'classroom';
+  type: 'lab' | 'equipment';
   description: string;
   location: string;
   capacity: number;

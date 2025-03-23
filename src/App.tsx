@@ -9,6 +9,7 @@ import FacilityDetails from './pages/FacilityDetails';
 import { AuthProvider } from './context/AuthContext';
 import NewFacility from './pages/NewFacility';
 import Reports from './pages/Reports';
+import Inventory from './pages/Inventory';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Create a client
@@ -26,6 +27,7 @@ function App() {
             <Route path="/facilities/new" element={<NewFacility />} />
             <Route path="/facilities/:id" element={<FacilityDetails />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/inventory" element={<Inventory />} />
           </Routes>
         </Router>
         <Toaster />

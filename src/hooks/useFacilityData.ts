@@ -46,16 +46,13 @@ export const useFacilityData = () => {
       // Transform the data to match our Facility type
       return data.map((facility): Facility => {
         // Type cast for facility type
-        let typedType: 'lab' | 'equipment' | 'classroom';
+        let typedType: 'lab' | 'equipment';
         switch (facility.type) {
           case 'lab':
             typedType = 'lab';
             break;
           case 'equipment':
             typedType = 'equipment';
-            break;
-          case 'classroom':
-            typedType = 'classroom';
             break;
           default:
             console.warn(`Unexpected facility type: ${facility.type}, defaulting to 'lab'`);
