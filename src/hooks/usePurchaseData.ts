@@ -119,8 +119,8 @@ export const usePurchaseData = () => {
               id: item.id,
               name: item.name,
               quantity: item.quantity,
-              price: parseFloat(item.price),
-              total: parseFloat(item.total)
+              price: Number(item.price), // Ensure conversion to number
+              total: Number(item.total)  // Ensure conversion to number
             })),
             totalAmount: purchaseRequest.total_amount,
             status: typedStatus,
