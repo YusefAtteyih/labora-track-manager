@@ -37,8 +37,8 @@ export interface InventoryItem {
   quantity: number;
   unit: string;
   status: string;
-  facilityId: string;
-  facilityName: string;
+  facilityId: string;  // This will store the UUID of the associated facility
+  facilityName: string; // This will store the name of the facility for display
   created_at?: string;
   updated_at?: string;
 }

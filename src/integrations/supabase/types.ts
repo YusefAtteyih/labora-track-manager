@@ -120,6 +120,7 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          facility_id: string | null
           id: string
           location: string
           name: string
@@ -131,6 +132,7 @@ export type Database = {
         Insert: {
           category: string
           created_at?: string
+          facility_id?: string | null
           id?: string
           location: string
           name: string
@@ -142,6 +144,7 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string
+          facility_id?: string | null
           id?: string
           location?: string
           name?: string
@@ -150,7 +153,15 @@ export type Database = {
           unit?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organizations: {
         Row: {

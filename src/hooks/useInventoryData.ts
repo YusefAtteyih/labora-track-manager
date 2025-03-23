@@ -33,23 +33,35 @@ export const useInventoryData = () => {
   return useQuery({
     queryKey: ['inventory'],
     queryFn: async (): Promise<InventoryItem[]> => {
-      // Fetch inventory items from the database with facility information
-      const { data, error } = await supabase
+      // First fetch inventory items
+      const { data: inventoryData, error: inventoryError } = await supabase
         .from('inventory_items')
-        .select(`
-          *,
-          facilities:facility_id (
-            name
-          )
-        `)
+        .select('*')
         .order('name');
       
-      if (error) {
-        console.error('Error fetching inventory items:', error);
-        throw new Error(error.message);
+      if (inventoryError) {
+        console.error('Error fetching inventory items:', inventoryError);
+        throw new Error(inventoryError.message);
       }
+
+      // Then fetch all facilities for mapping
+      const { data: facilitiesData, error: facilitiesError } = await supabase
+        .from('facilities')
+        .select('id, name');
       
-      return data.map(item => ({
+      if (facilitiesError) {
+        console.error('Error fetching facilities:', facilitiesError);
+        throw new Error(facilitiesError.message);
+      }
+
+      // Create a map of facility IDs to names for quick lookup
+      const facilityMap = new Map();
+      facilitiesData.forEach(facility => {
+        facilityMap.set(facility.id, facility.name);
+      });
+      
+      // Map inventory items to include facility names
+      return inventoryData.map(item => ({
         id: item.id,
         name: item.name,
         category: item.category,
@@ -57,8 +69,8 @@ export const useInventoryData = () => {
         quantity: item.quantity,
         unit: item.unit,
         status: item.status,
-        facilityId: item.facility_id,
-        facilityName: item.facilities ? item.facilities.name : 'Unknown Facility',
+        facilityId: item.facility_id || '',
+        facilityName: item.facility_id ? facilityMap.get(item.facility_id) || 'Unknown Facility' : 'Unassigned',
         created_at: item.created_at,
         updated_at: item.updated_at
       }));
