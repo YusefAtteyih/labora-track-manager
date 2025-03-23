@@ -2,16 +2,25 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 
-// Define user roles
-export type UserRole = 'student' | 'staff' | 'admin' | 'visitor';
+// Define user roles with the new hierarchy
+export type UserRole = 'org_admin' | 'lab_supervisor' | 'facility_member' | 'student' | 'visitor';
 
-// Define user type
+// Define organization type
+export interface Organization {
+  id: string;
+  name: string;
+  department: string;
+}
+
+// Define user type with organization
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   avatar?: string;
+  organizationId?: string;
+  organization?: Organization;
 }
 
 // Auth context interface
@@ -25,35 +34,69 @@ interface AuthContextType {
   checkAuth: () => void;
 }
 
-// Mock users for demo
-const MOCK_USERS: User[] = [
+// Mock organizations
+const MOCK_ORGANIZATIONS: Organization[] = [
   {
     id: '1',
-    name: 'Admin User',
-    email: 'admin@university.edu',
-    role: 'admin',
-    avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=0284c7&color=fff'
+    name: 'Science Department',
+    department: 'Chemistry'
   },
   {
     id: '2',
-    name: 'Staff Member',
-    email: 'staff@university.edu',
-    role: 'staff',
-    avatar: 'https://ui-avatars.com/api/?name=Staff+Member&background=0ea5e9&color=fff'
+    name: 'Engineering Department',
+    department: 'Computer Science'
   },
   {
     id: '3',
-    name: 'Student User',
-    email: 'student@university.edu',
-    role: 'student',
-    avatar: 'https://ui-avatars.com/api/?name=Student+User&background=38bdf8&color=fff'
+    name: 'Medical Department',
+    department: 'Biology'
+  }
+];
+
+// Mock users with the new hierarchy
+const MOCK_USERS: User[] = [
+  {
+    id: '1',
+    name: 'Organization Admin',
+    email: 'org_admin@university.edu',
+    role: 'org_admin',
+    avatar: 'https://ui-avatars.com/api/?name=Org+Admin&background=0284c7&color=fff',
+    organizationId: '1',
+    organization: MOCK_ORGANIZATIONS[0]
+  },
+  {
+    id: '2',
+    name: 'Lab Supervisor',
+    email: 'lab_supervisor@university.edu',
+    role: 'lab_supervisor',
+    avatar: 'https://ui-avatars.com/api/?name=Lab+Supervisor&background=0ea5e9&color=fff',
+    organizationId: '1',
+    organization: MOCK_ORGANIZATIONS[0]
+  },
+  {
+    id: '3',
+    name: 'Facility Member',
+    email: 'facility_member@university.edu',
+    role: 'facility_member',
+    avatar: 'https://ui-avatars.com/api/?name=Facility+Member&background=38bdf8&color=fff',
+    organizationId: '1',
+    organization: MOCK_ORGANIZATIONS[0]
   },
   {
     id: '4',
+    name: 'Student User',
+    email: 'student@university.edu',
+    role: 'student',
+    avatar: 'https://ui-avatars.com/api/?name=Student+User&background=7dd3fc&color=fff',
+    organizationId: '2',
+    organization: MOCK_ORGANIZATIONS[1]
+  },
+  {
+    id: '5',
     name: 'Visitor User',
     email: 'visitor@example.com',
     role: 'visitor',
-    avatar: 'https://ui-avatars.com/api/?name=Visitor+User&background=7dd3fc&color=fff'
+    avatar: 'https://ui-avatars.com/api/?name=Visitor+User&background=bae6fd&color=fff'
   }
 ];
 

@@ -13,13 +13,22 @@ import Facilities from "./pages/Facilities";
 import Bookings from "./pages/Bookings";
 import Purchases from "./pages/Purchases";
 import Reports from "./pages/Reports";
+import Organizations from "./pages/Organizations";
+import Users from "./pages/Users";
+import Approvals from "./pages/Approvals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Protected route wrapper
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+// Protected route wrapper with optional role check
+const ProtectedRoute = ({ 
+  children, 
+  allowedRoles = [] 
+}: { 
+  children: React.ReactNode,
+  allowedRoles?: string[]
+}) => {
+  const { isAuthenticated, isLoading, user } = useAuth();
   
   if (isLoading) {
     // You could add a loading spinner here
@@ -28,6 +37,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  
+  // If roles are specified, check if the user has the required role
+  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
   }
   
   return children;
@@ -79,7 +93,7 @@ const App = () => (
             <Route
               path="/inventory"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['org_admin', 'lab_supervisor', 'facility_member']}>
                   <Inventory />
                 </ProtectedRoute>
               }
@@ -103,7 +117,7 @@ const App = () => (
             <Route
               path="/purchases"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['org_admin', 'lab_supervisor', 'facility_member']}>
                   <Purchases />
                 </ProtectedRoute>
               }
@@ -111,8 +125,32 @@ const App = () => (
             <Route
               path="/reports"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['org_admin', 'lab_supervisor']}>
                   <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/organizations"
+              element={
+                <ProtectedRoute allowedRoles={['org_admin']}>
+                  <Organizations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute allowedRoles={['org_admin']}>
+                  <Users />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/approvals"
+              element={
+                <ProtectedRoute allowedRoles={['lab_supervisor']}>
+                  <Approvals />
                 </ProtectedRoute>
               }
             />

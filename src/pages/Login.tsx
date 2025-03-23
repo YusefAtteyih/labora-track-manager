@@ -95,7 +95,7 @@ const Login = () => {
                       />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Demo emails: admin@university.edu, staff@university.edu, student@university.edu, visitor@example.com
+                      Demo emails: org_admin@university.edu, lab_supervisor@university.edu, facility_member@university.edu, student@university.edu, visitor@example.com
                     </p>
                   </div>
                   
@@ -176,8 +176,9 @@ const Login = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="staff">Staff</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="facility_member">Facility Member</SelectItem>
+                        <SelectItem value="lab_supervisor">Lab Supervisor</SelectItem>
+                        <SelectItem value="org_admin">Organization Admin</SelectItem>
                         <SelectItem value="visitor">Visitor</SelectItem>
                       </SelectContent>
                     </Select>

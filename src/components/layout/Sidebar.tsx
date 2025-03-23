@@ -10,7 +10,10 @@ import {
   LogOut, 
   Settings, 
   ShoppingCart,
-  Microscope
+  Microscope,
+  Building,
+  Users,
+  CheckSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,10 +35,22 @@ const navItems: NavItem[] = [
     icon: Home,
   },
   {
+    title: 'Organizations',
+    href: '/organizations',
+    icon: Building,
+    roles: ['org_admin'],
+  },
+  {
+    title: 'Users',
+    href: '/users',
+    icon: Users,
+    roles: ['org_admin'],
+  },
+  {
     title: 'Inventory',
     href: '/inventory',
     icon: BoxesIcon,
-    roles: ['admin', 'staff'],
+    roles: ['org_admin', 'lab_supervisor', 'facility_member'],
   },
   {
     title: 'Facilities',
@@ -51,19 +66,25 @@ const navItems: NavItem[] = [
     title: 'Purchases',
     href: '/purchases',
     icon: ShoppingCart,
-    roles: ['admin', 'staff'],
+    roles: ['org_admin', 'lab_supervisor', 'facility_member'],
+  },
+  {
+    title: 'Approvals',
+    href: '/approvals',
+    icon: CheckSquare,
+    roles: ['lab_supervisor'],
   },
   {
     title: 'Reports',
     href: '/reports',
     icon: FileText,
-    roles: ['admin', 'staff'],
+    roles: ['org_admin', 'lab_supervisor'],
   },
   {
     title: 'Settings',
     href: '/settings',
     icon: Settings,
-    roles: ['admin'],
+    roles: ['org_admin'],
   },
 ];
 
@@ -105,6 +126,16 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, toggleSidebar }) => {
 
         <Separator />
 
+        {/* Organization info if user is part of one */}
+        {user?.organization && (
+          <div className="px-4 py-2">
+            <div className="bg-primary/5 rounded-md p-2">
+              <p className="text-xs font-medium text-primary">{user.organization.name}</p>
+              <p className="text-xs text-muted-foreground">{user.organization.department}</p>
+            </div>
+          </div>
+        )}
+
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-1 px-2">
@@ -144,8 +175,8 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, toggleSidebar }) => {
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{user.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                <p className="text-xs text-muted-foreground truncate capitalize">
+                  {user.role.replace('_', ' ')}
                 </p>
               </div>
               <Button
