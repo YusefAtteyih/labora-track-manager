@@ -1,6 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { mockReportsData } from '@/data/reports';
 
 export interface Report {
   id: string;
@@ -28,6 +29,14 @@ export interface ReportSummary {
 export interface ReportsData {
   reports: Report[];
   summary: ReportSummary;
+  // Add the missing properties that are used in Reports.tsx
+  usageSummary: { label: string; value: string; trend: number }[];
+  bookingSummary: { label: string; value: string; trend: number }[];
+  inventorySummary: { label: string; value: string; trend: number }[];
+  usageByType: { name: string; value: number }[];
+  usageOverTime: { month: string; laboratories: number; equipment: number; classrooms: number }[];
+  bookingsByStatus: { status: string; count: number }[];
+  inventoryByCategory: { category: string; inStock: number; lowStock: number; outOfStock: number }[];
 }
 
 export const useReportsData = () => {
@@ -177,6 +186,7 @@ export const useReportsData = () => {
         }
       ];
       
+      // Import the mock data from src/data/reports.ts
       return {
         reports: mockReports,
         summary: {
@@ -184,7 +194,15 @@ export const useReportsData = () => {
           totalViews: mockReports.reduce((sum, report) => sum + report.views, 0),
           popularCategories,
           recentReports
-        }
+        },
+        // Add the mock data properties required by Reports.tsx
+        usageSummary: mockReportsData.usageSummary,
+        bookingSummary: mockReportsData.bookingSummary,
+        inventorySummary: mockReportsData.inventorySummary,
+        usageByType: mockReportsData.usageByType,
+        usageOverTime: mockReportsData.usageOverTime,
+        bookingsByStatus: mockReportsData.bookingsByStatus,
+        inventoryByCategory: mockReportsData.inventoryByCategory
       };
     }
   });
