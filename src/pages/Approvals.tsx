@@ -278,7 +278,9 @@ const Approvals = () => {
                           <CardDescription>
                             {isBookingRequest(request) 
                               ? `${request.details.facility.name} - ${new Date(request.details.startDate).toLocaleDateString()}`
-                              : `${request.details.itemName} - ${request.details.quantity} units`
+                              : isPurchaseRequest(request) 
+                                ? `${request.details.itemName} - ${request.details.quantity} units`
+                                : ''
                             }
                           </CardDescription>
                         </div>
@@ -293,12 +295,16 @@ const Approvals = () => {
                           <AvatarImage src={
                             isBookingRequest(request) 
                               ? request.details.user.avatar 
-                              : request.details.requestedBy.avatar
+                              : isPurchaseRequest(request)
+                                ? request.details.requestedBy.avatar
+                                : ''
                           } />
                           <AvatarFallback>
                             {isBookingRequest(request) 
                               ? request.details.user.name.substring(0, 2).toUpperCase() 
-                              : request.details.requestedBy.name.substring(0, 2).toUpperCase()
+                              : isPurchaseRequest(request)
+                                ? request.details.requestedBy.name.substring(0, 2).toUpperCase()
+                                : ''
                             }
                           </AvatarFallback>
                         </Avatar>
@@ -306,13 +312,17 @@ const Approvals = () => {
                           <div className="font-medium">
                             {isBookingRequest(request) 
                               ? request.details.user.name 
-                              : request.details.requestedBy.name
+                              : isPurchaseRequest(request) 
+                                ? request.details.requestedBy.name
+                                : ''
                             }
                           </div>
                           <div className="text-xs text-muted-foreground capitalize">
                             {isBookingRequest(request) 
                               ? request.details.user.role 
-                              : request.details.requestedBy.role.replace('_', ' ')
+                              : isPurchaseRequest(request)
+                                ? request.details.requestedBy.role.replace('_', ' ')
+                                : ''
                             }
                           </div>
                         </div>
@@ -323,7 +333,9 @@ const Approvals = () => {
                           Requested on {new Date(
                             isBookingRequest(request) 
                               ? request.details.startDate 
-                              : request.details.dateRequested
+                              : isPurchaseRequest(request)
+                                ? request.details.dateRequested
+                                : ''
                           ).toLocaleString()}
                         </div>
                       </div>

@@ -132,6 +132,9 @@ const lowStockItems = [
 
 const Dashboard = () => {
   const { user } = useAuth();
+  
+  // Check if user has admin privileges (org_admin or lab_supervisor)
+  const hasAdminPrivileges = user?.role === 'org_admin' || user?.role === 'lab_supervisor';
 
   const handleApprove = (id: string) => {
     toast({
@@ -285,7 +288,7 @@ const Dashboard = () => {
         </div>
         
         {/* Admin/Staff Specific Content */}
-        {(user?.role === 'admin' || user?.role === 'staff') && (
+        {hasAdminPrivileges && (
           <>
             <h2 className="text-xl font-semibold mt-6">Approvals & Alerts</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
