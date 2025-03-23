@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, register, isAuthenticated } = useAuth();
+  const { login, register, isAuthenticated, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   
   // Login form state
@@ -35,6 +35,7 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      console.log('User is authenticated, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
@@ -52,11 +53,25 @@ const Login = () => {
     
     setIsLoading(true);
     try {
-      await login(loginEmail, loginPassword);
+      console.log('Attempting login with:', loginEmail);
+      const success = await login(loginEmail, loginPassword);
+      console.log('Login result:', success);
+      
+      if (!success) {
+        toast({
+          title: "Login failed",
+          description: "Invalid email or password",
+          variant: "destructive",
+        });
+      }
       // Navigation will happen in the useEffect if login is successful
     } catch (error) {
       console.error('Login error:', error);
-      // Error is already handled in the login function
+      toast({
+        title: "Login failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -76,11 +91,24 @@ const Login = () => {
     setIsLoading(true);
     try {
       console.log('Registering user with role:', registerRole);
-      await register(registerName, registerEmail, registerPassword, registerRole);
+      const success = await register(registerName, registerEmail, registerPassword, registerRole);
+      console.log('Registration result:', success);
+      
+      if (!success) {
+        toast({
+          title: "Registration failed",
+          description: "Could not create account. The email may already be in use.",
+          variant: "destructive",
+        });
+      }
       // Navigation will happen in the useEffect if registration is successful
     } catch (error) {
       console.error('Register error:', error);
-      // Error is already handled in the register function
+      toast({
+        title: "Registration failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

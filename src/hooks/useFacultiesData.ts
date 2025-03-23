@@ -2,6 +2,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 export interface Organization {
   id: string;
@@ -17,9 +18,12 @@ export interface Organization {
 
 export const useFacultiesData = () => {
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
 
   // Set up real-time subscription
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     const orgChannel = supabase
       .channel('org-changes')
       .on(
@@ -73,7 +77,7 @@ export const useFacultiesData = () => {
       supabase.removeChannel(userChannel);
       supabase.removeChannel(labsChannel);
     };
-  }, [queryClient]);
+  }, [queryClient, isAuthenticated]);
 
   return useQuery({
     queryKey: ['faculties'],
@@ -86,6 +90,7 @@ export const useFacultiesData = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           console.warn('No active session, faculties may be filtered by RLS');
+          return [];
         }
         
         // Fetch organizations data
@@ -100,7 +105,7 @@ export const useFacultiesData = () => {
         
         console.log('Faculties data received:', facultiesData);
         
-        if (!facultiesData) {
+        if (!facultiesData || facultiesData.length === 0) {
           console.warn('No faculties data returned from query');
           return [];
         }
@@ -158,6 +163,7 @@ export const useFacultiesData = () => {
         throw error;
       }
     },
+    enabled: isAuthenticated,
     retry: 1,
     refetchOnWindowFocus: false
   });

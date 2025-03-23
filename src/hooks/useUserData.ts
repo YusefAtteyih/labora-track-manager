@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/context/AuthContext';
 import { useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 export interface User {
   id: string;
@@ -22,9 +23,12 @@ export interface User {
 
 export const useUserData = () => {
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
 
   // Set up real-time subscription
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -44,7 +48,7 @@ export const useUserData = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, isAuthenticated]);
 
   return useQuery({
     queryKey: ['users'],
@@ -86,7 +90,7 @@ export const useUserData = () => {
         
         console.log('Users data received:', userData);
         
-        if (!userData) {
+        if (!userData || userData.length === 0) {
           console.warn('No user data returned from query');
           return [];
         }
@@ -112,6 +116,7 @@ export const useUserData = () => {
         throw error;
       }
     },
+    enabled: isAuthenticated,
     retry: 1, 
     refetchOnWindowFocus: false
   });
