@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole } from '@/hooks/useUserData';
+import { User } from '@/hooks/useUserData';
+import { UserRole } from '@/context/AuthContext';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar } from '@/components/ui/avatar';
