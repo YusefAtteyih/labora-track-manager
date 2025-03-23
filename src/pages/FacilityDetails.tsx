@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { format, addHours } from 'date-fns';
@@ -80,6 +79,15 @@ const FacilityDetails = () => {
 
   const handleBookingSubmit = async () => {
     try {
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to make a booking",
+          variant: "destructive"
+        });
+        return;
+      }
+
       if (!bookingForm.purpose.trim()) {
         toast({
           title: "Validation Error",
@@ -98,7 +106,7 @@ const FacilityDetails = () => {
         return;
       }
 
-      await createBooking(bookingForm);
+      await createBooking(bookingForm, user);
       
       toast({
         title: "Booking Request Submitted",

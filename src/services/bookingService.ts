@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
 export interface BookingFormData {
@@ -12,9 +11,15 @@ export interface BookingFormData {
   notes?: string;
 }
 
-export const createBooking = async (bookingData: BookingFormData) => {
-  const { user } = useAuth();
-  
+export interface User {
+  id: string;
+  name?: string;
+  email: string;
+  role?: string;
+  avatar?: string;
+}
+
+export const createBooking = async (bookingData: BookingFormData, user: User) => {
   if (!user) {
     throw new Error("User not authenticated");
   }
