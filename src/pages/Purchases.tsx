@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  Check, FileDown, Clock, DollarSign, Package, Plus, Search, ShoppingCart, X, Filter, ArrowDown10, ArrowDown8, ArrowUpDown
+  Check, FileDown, Clock, DollarSign, Package, Plus, Search, ShoppingCart, X, Filter, 
+  ArrowDown, ArrowUp, ArrowUpDown
 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -93,8 +93,8 @@ const Purchases = () => {
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return <ArrowUpDown className="h-4 w-4 ml-1" />;
     return sortDirection === 'asc' ? 
-      <ArrowDown8 className="h-4 w-4 ml-1" /> : 
-      <ArrowDown10 className="h-4 w-4 ml-1" />;
+      <ArrowUp className="h-4 w-4 ml-1" /> : 
+      <ArrowDown className="h-4 w-4 ml-1" />;
   };
 
   const getStatusBadge = (status: string) => {
