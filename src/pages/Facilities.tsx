@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FacilityCard from '@/components/facilities/FacilityCard';
 import { useFacilityData } from '@/hooks/useFacilityData';
+import { toast } from '@/hooks/use-toast';
 
 const Facilities = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,6 +27,13 @@ const Facilities = () => {
     return matchesSearch && facility.type === activeTab;
   });
 
+  const handleRequestFacility = () => {
+    toast({
+      title: "Request Facility",
+      description: "Facility request functionality is coming soon!",
+    });
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -36,7 +44,7 @@ const Facilities = () => {
               Browse and book laboratory facilities
             </p>
           </div>
-          <Button className="sm:w-auto">
+          <Button className="sm:w-auto" onClick={handleRequestFacility}>
             <Plus className="mr-2 h-4 w-4" />
             Request Facility
           </Button>
