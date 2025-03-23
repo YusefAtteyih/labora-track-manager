@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Organization } from '@/hooks/useOrganizationsData';
+import { Faculty } from '@/hooks/useFacultiesData';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface EditOrganizationDialogProps {
-  organization: Organization | null;
+  organization: Faculty | null;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -34,7 +34,7 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
         university: organization.university,
         faculty: organization.faculty,
         department: organization.department,
-        description: organization.description
+        description: organization.description || ''
       });
     }
   }, [organization]);
@@ -79,7 +79,7 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
       });
       
       // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      queryClient.invalidateQueries({ queryKey: ['faculties'] });
       onClose();
     } catch (error: any) {
       toast({
