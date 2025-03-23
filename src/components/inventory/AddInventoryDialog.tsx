@@ -155,7 +155,7 @@ const AddInventoryDialog: React.FC<AddInventoryDialogProps> = ({
                 <SelectValue placeholder="Select faculty first" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Faculties</SelectItem>
+                <SelectItem value="_all">All Faculties</SelectItem>
                 {faculties?.map(faculty => (
                   <SelectItem key={faculty.id} value={faculty.id}>
                     {faculty.name} ({faculty.faculty})
@@ -190,7 +190,7 @@ const AddInventoryDialog: React.FC<AddInventoryDialogProps> = ({
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem value="" disabled>
+                  <SelectItem value="_none" disabled>
                     {selectedFacultyId ? "No facilities in this faculty" : "Select a faculty first"}
                   </SelectItem>
                 )}
