@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Building, Plus, Search, Edit, Trash, Users, Microscope, BoxesIcon, BookOpen, School } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -10,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/AuthContext';
-import { Organization, useFacultiesData } from '@/hooks/useFacultiesData';
+import { Faculty, useFacultiesData } from '@/hooks/useFacultiesData';
 import { supabase } from '@/integrations/supabase/client';
 import OrganizationMembers from '@/components/organizations/OrganizationMembers';
 import EditOrganizationDialog from '@/components/organizations/EditOrganizationDialog';
@@ -28,7 +27,7 @@ const Faculties = () => {
     faculty: '',
     department: ''
   });
-  const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
+  const [selectedOrganization, setSelectedOrganization] = useState<Faculty | null>(null);
   const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -102,17 +101,17 @@ const Faculties = () => {
     }
   };
 
-  const handleViewMembers = (organization: Organization) => {
+  const handleViewMembers = (organization: Faculty) => {
     setSelectedOrganization(organization);
     setIsMembersDialogOpen(true);
   };
 
-  const handleEditOrganization = (organization: Organization) => {
+  const handleEditOrganization = (organization: Faculty) => {
     setSelectedOrganization(organization);
     setIsEditDialogOpen(true);
   };
 
-  const handleDeleteClick = (organization: Organization) => {
+  const handleDeleteClick = (organization: Faculty) => {
     setSelectedOrganization(organization);
     setIsDeleteDialogOpen(true);
   };

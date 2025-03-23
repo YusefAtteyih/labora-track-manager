@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
-interface Faculty {
+export interface Faculty {
   id: string;
   name: string;
   university: string;
@@ -13,6 +13,10 @@ interface Faculty {
   description?: string;
   parentId?: string;
   createdAt: string;
+  // Add these properties that are referenced in Faculties.tsx
+  members?: number;
+  facilities?: number;
+  equipment?: number;
 }
 
 export const useFacultiesData = () => {
@@ -92,7 +96,11 @@ export const useFacultiesData = () => {
           department: faculty.department,
           description: faculty.description,
           parentId: faculty.parent_id,
-          createdAt: faculty.created_at
+          createdAt: faculty.created_at,
+          // Add placeholder values for required properties
+          members: 0, // Placeholder
+          facilities: 0, // Placeholder
+          equipment: 0, // Placeholder
         }));
       } catch (error) {
         console.error('Failed to fetch faculties:', error);
