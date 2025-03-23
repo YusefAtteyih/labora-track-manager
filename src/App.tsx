@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import Facilities from "./pages/Facilities";
 import FacilityDetails from "./pages/FacilityDetails";
 import Bookings from "./pages/Bookings";
 import Purchases from "./pages/Purchases";
+import NewPurchaseRequest from "./pages/NewPurchaseRequest";
 import Reports from "./pages/Reports";
 import Organizations from "./pages/Organizations";
 import Users from "./pages/Users";
@@ -128,6 +128,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['org_admin', 'lab_supervisor', 'facility_member']}>
                   <Purchases />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/purchases/new"
+              element={
+                <ProtectedRoute allowedRoles={['org_admin', 'lab_supervisor', 'facility_member']}>
+                  <NewPurchaseRequest />
                 </ProtectedRoute>
               }
             />

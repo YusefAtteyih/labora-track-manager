@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { usePurchaseData, PurchaseRequest } from '@/hooks/usePurchaseData';
 import { useAuth } from '@/context/AuthContext';
 import MainLayout from '@/components/layout/MainLayout';
@@ -108,6 +108,9 @@ const Purchases = () => {
     }
   };
 
+  // Check if the user can approve/reject requests (org_admin or lab_supervisor)
+  const canApproveRequests = user?.role === 'org_admin' || user?.role === 'lab_supervisor';
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -118,10 +121,12 @@ const Purchases = () => {
               Manage purchase requisitions for lab supplies and equipment
             </p>
           </div>
-          <Button className="sm:w-auto">
-            <Plus className="mr-2 h-4 w-4" />
-            New Request
-          </Button>
+          <Link to="/purchases/new">
+            <Button className="sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              New Request
+            </Button>
+          </Link>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -254,7 +259,7 @@ const Purchases = () => {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    {request.status === 'pending' && (
+                    {request.status === 'pending' && canApproveRequests && (
                       <>
                         <Button 
                           size="sm" 
