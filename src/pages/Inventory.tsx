@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   BoxesIcon,
@@ -145,6 +144,9 @@ const Inventory = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // Check if user has admin privileges (org_admin or lab_supervisor)
+  const hasAdminPrivileges = user?.role === 'org_admin' || user?.role === 'lab_supervisor';
+  
   // Filter inventory
   const filteredInventory = inventory.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -262,7 +264,7 @@ const Inventory = () => {
             </p>
           </div>
           
-          {(user?.role === 'admin' || user?.role === 'staff') && (
+          {hasAdminPrivileges && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -438,7 +440,7 @@ const Inventory = () => {
                   <TableHead>Location</TableHead>
                   <TableHead className="text-right">Quantity</TableHead>
                   <TableHead>Status</TableHead>
-                  {(user?.role === 'admin' || user?.role === 'staff') && (
+                  {hasAdminPrivileges && (
                     <TableHead className="text-right">Actions</TableHead>
                   )}
                 </TableRow>
@@ -447,7 +449,7 @@ const Inventory = () => {
                 {filteredInventory.length === 0 ? (
                   <TableRow>
                     <TableCell 
-                      colSpan={(user?.role === 'admin' || user?.role === 'staff') ? 6 : 5} 
+                      colSpan={hasAdminPrivileges ? 6 : 5} 
                       className="text-center py-8 text-muted-foreground"
                     >
                       No items found matching your search.
@@ -486,7 +488,7 @@ const Inventory = () => {
                           </Badge>
                         )}
                       </TableCell>
-                      {(user?.role === 'admin' || user?.role === 'staff') && (
+                      {hasAdminPrivileges && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button
