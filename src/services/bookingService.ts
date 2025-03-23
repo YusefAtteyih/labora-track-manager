@@ -28,9 +28,10 @@ export const createBooking = async (bookingData: BookingFormData, user: User) =>
     console.log("Booking data:", bookingData);
     console.log("User:", user);
     
+    // Ensure user_id is stored as text to match RLS policy expectations
     const bookingPayload = {
       facility_id: bookingData.facilityId,
-      user_id: user.id,
+      user_id: user.id.toString(), // Ensure user_id is a string
       user_name: user.name || user.email.split('@')[0],
       user_role: user.role || 'student',
       user_avatar: user.avatar,
