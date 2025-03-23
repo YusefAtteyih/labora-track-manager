@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, FilterIcon, Plus } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -34,12 +33,7 @@ const Facilities = () => {
   });
 
   const handleAddFacility = () => {
-    // Will be implemented later to navigate to a form
-    toast({
-      title: "Add Facility",
-      description: "Add facility functionality is coming soon!",
-    });
-    // navigate('/facilities/new');
+    navigate('/facilities/new');
   };
 
   return (
