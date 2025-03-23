@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,6 +14,8 @@ import { CheckIcon, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Facility } from '@/types/facility';
 import { useQueryClient } from '@tanstack/react-query';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useFacultiesData } from '@/hooks/useFacultiesData';
 
 // Schema for lab form validation
 const labFormSchema = z.object({
@@ -28,6 +30,7 @@ const labFormSchema = z.object({
     required_error: 'Please select a status',
   }),
   openHours: z.string().min(3, { message: 'Open hours information is required' }),
+  facultyId: z.string().min(1, { message: 'Faculty is required' }),
   department: z.string().min(2, { message: 'Department is required' }),
   features: z.string().optional(),
   image: z.string().url({ message: 'Please enter a valid image URL' }).optional(),
@@ -45,6 +48,9 @@ interface AddFacilityFormProps {
 const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: AddFacilityFormProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: faculties, isLoading: facultiesLoading } = useFacultiesData();
+  const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
+  const [departmentInfo, setDepartmentInfo] = useState<string>('');
   
   const form = useForm<FormValues>({
     resolver: zodResolver(labFormSchema),
@@ -56,6 +62,7 @@ const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: Add
       capacity: 1,
       status: 'available',
       openHours: '9:00 AM - 5:00 PM',
+      facultyId: '',
       department: '',
       features: '',
       image: 'https://via.placeholder.com/400x200?text=Lab+Image',
@@ -65,6 +72,17 @@ const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: Add
   });
 
   const { isSubmitting } = form.formState;
+
+  // Update department when faculty changes
+  useEffect(() => {
+    if (selectedFaculty && faculties) {
+      const faculty = faculties.find(f => f.id === selectedFaculty);
+      if (faculty) {
+        setDepartmentInfo(faculty.department);
+        form.setValue('department', faculty.department);
+      }
+    }
+  }, [selectedFaculty, faculties, form]);
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -88,6 +106,7 @@ const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: Add
         status: data.status,
         open_hours: data.openHours,
         department: data.department,
+        faculty_id: data.facultyId,
         features: featuresArray,
         image: data.image || 'https://via.placeholder.com/400x200?text=Lab+Image',
         requires_approval: data.requiresApproval,
@@ -110,7 +129,7 @@ const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: Add
 
       toast({
         title: 'Success!',
-        description: 'Lab has been added successfully.',
+        description: 'Laboratory has been added successfully.',
       });
 
       // Navigate back to labs list
@@ -119,7 +138,7 @@ const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: Add
       console.error('Error adding lab:', error);
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to add lab',
+        description: error instanceof Error ? error.message : 'Failed to add laboratory',
         variant: 'destructive',
       });
     }
@@ -221,13 +240,57 @@ const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: Add
 
               <FormField
                 control={form.control}
+                name="facultyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Faculty*</FormLabel>
+                    <FormControl>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setSelectedFaculty(value);
+                        }}
+                        value={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a faculty" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {facultiesLoading ? (
+                            <SelectItem value="loading" disabled>Loading faculties...</SelectItem>
+                          ) : (
+                            faculties?.map(faculty => (
+                              <SelectItem key={faculty.id} value={faculty.id}>
+                                {faculty.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="department"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Department*</FormLabel>
                     <FormControl>
-                      <Input placeholder="Chemistry Department" {...field} />
+                      <Input 
+                        placeholder="Department will auto-populate" 
+                        value={field.value || departmentInfo} 
+                        onChange={field.onChange}
+                        readOnly
+                        className="bg-gray-100"
+                      />
                     </FormControl>
+                    <FormDescription>
+                      This field is automatically filled based on faculty selection
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
