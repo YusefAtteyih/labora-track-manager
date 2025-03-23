@@ -27,7 +27,7 @@ export const useOrganizationsData = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'organizations'
+          table: 'faculties'
         },
         () => {
           // Invalidate and refetch when data changes
@@ -78,62 +78,62 @@ export const useOrganizationsData = () => {
   return useQuery({
     queryKey: ['organizations'],
     queryFn: async (): Promise<Organization[]> => {
-      // Fetch organizations data
-      const { data: organizationsData, error: organizationsError } = await supabase
-        .from('organizations')
+      // Fetch faculties data (was organizations)
+      const { data: facultiesData, error: facultiesError } = await supabase
+        .from('faculties')
         .select('id, name, department, university, faculty, description');
         
-      if (organizationsError) {
-        console.error('Error fetching organizations:', organizationsError);
-        throw new Error(organizationsError.message);
+      if (facultiesError) {
+        console.error('Error fetching faculties:', facultiesError);
+        throw new Error(facultiesError.message);
       }
       
       // Fetch facilities data to get real counts by department
       const { data: facilities, error: facilitiesError } = await supabase
         .from('facilities')
-        .select('department');
+        .select('department, faculty_id');
         
       if (facilitiesError) {
-        console.error('Error fetching facilities for organizations:', facilitiesError);
+        console.error('Error fetching facilities for faculties:', facilitiesError);
         throw new Error(facilitiesError.message);
       }
       
-      // Count facilities by department
-      const facilitiesByDept = facilities.reduce((acc, facility) => {
-        if (facility.department) {
-          acc[facility.department] = (acc[facility.department] || 0) + 1;
+      // Count facilities by department and faculty_id
+      const facilitiesByFaculty = facilities.reduce((acc, facility) => {
+        if (facility.faculty_id) {
+          acc[facility.faculty_id] = (acc[facility.faculty_id] || 0) + 1;
         }
         return acc;
       }, {} as Record<string, number>);
       
-      // Fetch users count by organization
+      // Fetch users count by faculty
       const { data: users, error: usersError } = await supabase
         .from('users')
-        .select('organization_id');
+        .select('faculty_id');
         
       if (usersError) {
-        console.error('Error fetching users for organizations:', usersError);
+        console.error('Error fetching users for faculties:', usersError);
         throw new Error(usersError.message);
       }
       
-      // Count users by organization
-      const usersByOrg = users.reduce((acc, user) => {
-        if (user.organization_id) {
-          acc[user.organization_id] = (acc[user.organization_id] || 0) + 1;
+      // Count users by faculty
+      const usersByFaculty = users.reduce((acc, user) => {
+        if (user.faculty_id) {
+          acc[user.faculty_id] = (acc[user.faculty_id] || 0) + 1;
         }
         return acc;
       }, {} as Record<string, number>);
       
       // Transform the data to match our Organization type
-      return organizationsData.map(org => ({
+      return facultiesData.map(org => ({
         id: org.id,
         name: org.name,
         description: org.description || `${org.name} - ${org.department} department`,
         university: org.university || 'University of Science and Technology',
         faculty: org.faculty || 'Faculty of Science',
         department: org.department,
-        facilities: facilitiesByDept[org.department] || 0,
-        members: usersByOrg[org.id] || 0,
+        facilities: facilitiesByFaculty[org.id] || 0,
+        members: usersByFaculty[org.id] || 0,
         equipment: Math.floor(Math.random() * 50) + 10 // Will keep random for equipment until we have equipment table
       }));
     }

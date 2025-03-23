@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Microscope, Plus, Search, Filter, CircleSlash, CheckCircle2 } from 'lucide-react';
@@ -33,7 +32,23 @@ const Labs = () => {
         throw new Error(error.message);
       }
       
-      return data as Facility[];
+      // Transform the data to match our Facility type
+      return data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        description: item.description || '',
+        location: item.location || '',
+        capacity: item.capacity || 0,
+        status: item.status,
+        image: item.image || '',
+        openHours: item.open_hours || '',
+        department: item.department || '',
+        features: item.features || [],
+        availableFor: item.available_for || [],
+        requiresApproval: item.requires_approval || false,
+        facultyId: item.faculty_id
+      })) as Facility[];
     }
   });
 
