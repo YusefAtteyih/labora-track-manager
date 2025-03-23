@@ -11,11 +11,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FacilityCard from '@/components/facilities/FacilityCard';
 import { useFacilityData } from '@/hooks/useFacilityData';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Facilities = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { data: facilities, isLoading, error } = useFacilityData();
   const [activeTab, setActiveTab] = useState('all');
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const isAdmin = user?.role === 'org_admin';
 
   // Filter facilities based on search query and active tab
   const filteredFacilities = facilities?.filter(facility => {
@@ -27,11 +33,13 @@ const Facilities = () => {
     return matchesSearch && facility.type === activeTab;
   });
 
-  const handleRequestFacility = () => {
+  const handleAddFacility = () => {
+    // Will be implemented later to navigate to a form
     toast({
-      title: "Request Facility",
-      description: "Facility request functionality is coming soon!",
+      title: "Add Facility",
+      description: "Add facility functionality is coming soon!",
     });
+    // navigate('/facilities/new');
   };
 
   return (
@@ -44,10 +52,12 @@ const Facilities = () => {
               Browse and book laboratory facilities
             </p>
           </div>
-          <Button className="sm:w-auto" onClick={handleRequestFacility}>
-            <Plus className="mr-2 h-4 w-4" />
-            Request Facility
-          </Button>
+          {isAdmin && (
+            <Button className="sm:w-auto" onClick={handleAddFacility}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Facility
+            </Button>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
