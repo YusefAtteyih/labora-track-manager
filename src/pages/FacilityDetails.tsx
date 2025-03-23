@@ -106,6 +106,14 @@ const FacilityDetails = () => {
         return;
       }
 
+      // Set form to loading state
+      const submitButton = document.querySelector('button[type="submit"]');
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = true;
+      }
+
+      console.log("Submitting booking form:", bookingForm);
+      
       await createBooking(bookingForm, user);
       
       toast({
@@ -114,8 +122,19 @@ const FacilityDetails = () => {
       });
       
       setIsBookingDialogOpen(false);
+      
+      // Reset submit button
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = false;
+      }
     } catch (error) {
       console.error("Booking submission error:", error);
+      
+      // Reset submit button
+      const submitButton = document.querySelector('button[type="submit"]');
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = false;
+      }
     }
   };
 
@@ -491,7 +510,7 @@ const FacilityDetails = () => {
             <Button variant="outline" onClick={() => setIsBookingDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleBookingSubmit}>
+            <Button onClick={handleBookingSubmit} type="submit">
               Submit Booking Request
             </Button>
           </DialogFooter>

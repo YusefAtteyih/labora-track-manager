@@ -25,28 +25,39 @@ export const createBooking = async (bookingData: BookingFormData, user: User) =>
   }
 
   try {
+    console.log("Booking data:", bookingData);
+    console.log("User:", user);
+    
+    const bookingPayload = {
+      facility_id: bookingData.facilityId,
+      user_id: user.id,
+      user_name: user.name || user.email.split('@')[0],
+      user_role: user.role || 'student',
+      user_avatar: user.avatar,
+      start_date: bookingData.startDate.toISOString(),
+      end_date: bookingData.endDate.toISOString(),
+      purpose: bookingData.purpose,
+      attendees: bookingData.attendees,
+      notes: bookingData.notes,
+      status: 'pending' // All bookings start as pending and need approval
+    };
+    
+    console.log("Submitting booking payload:", bookingPayload);
+    
     const { data, error } = await supabase
       .from('bookings')
-      .insert({
-        facility_id: bookingData.facilityId,
-        user_id: user.id,
-        user_name: user.name || user.email.split('@')[0],
-        user_role: user.role || 'student',
-        user_avatar: user.avatar,
-        start_date: bookingData.startDate.toISOString(),
-        end_date: bookingData.endDate.toISOString(),
-        purpose: bookingData.purpose,
-        attendees: bookingData.attendees,
-        notes: bookingData.notes,
-        status: 'pending' // All bookings start as pending and need approval
-      });
+      .insert(bookingPayload)
+      .select();
 
     if (error) {
+      console.error("Supabase error:", error);
       throw new Error(error.message);
     }
 
+    console.log("Booking created successfully:", data);
     return data;
   } catch (error) {
+    console.error("Error in createBooking:", error);
     if (error instanceof Error) {
       toast({
         title: "Booking Failed",
@@ -63,7 +74,8 @@ export const approveBooking = async (bookingId: string) => {
     const { data, error } = await supabase
       .from('bookings')
       .update({ status: 'approved' })
-      .eq('id', bookingId);
+      .eq('id', bookingId)
+      .select();
 
     if (error) {
       throw new Error(error.message);
@@ -80,7 +92,8 @@ export const rejectBooking = async (bookingId: string) => {
     const { data, error } = await supabase
       .from('bookings')
       .update({ status: 'rejected' })
-      .eq('id', bookingId);
+      .eq('id', bookingId)
+      .select();
 
     if (error) {
       throw new Error(error.message);
