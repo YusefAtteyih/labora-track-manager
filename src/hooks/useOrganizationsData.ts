@@ -16,13 +16,17 @@ export const useOrganizationsData = () => {
   return useQuery({
     queryKey: ['organizations'],
     queryFn: async (): Promise<Organization[]> => {
-      // In a real application, we would fetch this from a organizations table
-      // Since we don't have that table yet, we're using mock data
-      // but structuring the code to easily switch to real data later
+      // Fetch organizations data
+      const { data: organizationsData, error: organizationsError } = await supabase
+        .from('organizations')
+        .select('id, name, department');
+        
+      if (organizationsError) {
+        console.error('Error fetching organizations:', organizationsError);
+        throw new Error(organizationsError.message);
+      }
       
-      console.warn('Using mock organizations data - create an organizations table for real data');
-      
-      // Fetch facilities data to show real counts by department
+      // Fetch facilities data to get real counts by department
       const { data: facilities, error: facilitiesError } = await supabase
         .from('facilities')
         .select('department');
@@ -40,38 +44,34 @@ export const useOrganizationsData = () => {
         return acc;
       }, {} as Record<string, number>);
       
-      // Mock organizations with real facility counts where possible
-      const mockOrganizations = [
-        {
-          id: '1',
-          name: 'Science Department',
-          description: 'Chemistry and biology research labs',
-          department: 'Chemistry',
-          facilities: facilitiesByDept['Chemistry'] || 3,
-          members: 15,
-          equipment: 48
-        },
-        {
-          id: '2',
-          name: 'Engineering Department',
-          description: 'Computer science and electrical engineering labs',
-          department: 'Computer Science',
-          facilities: facilitiesByDept['Computer Science'] || 2,
-          members: 12,
-          equipment: 36
-        },
-        {
-          id: '3',
-          name: 'Medical Department',
-          description: 'Medical research and training facilities',
-          department: 'Biology',
-          facilities: facilitiesByDept['Biology'] || 4,
-          members: 20,
-          equipment: 62
-        }
-      ];
+      // Fetch users count by organization
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('organization_id');
+        
+      if (usersError) {
+        console.error('Error fetching users for organizations:', usersError);
+        throw new Error(usersError.message);
+      }
       
-      return mockOrganizations;
+      // Count users by organization
+      const usersByOrg = users.reduce((acc, user) => {
+        if (user.organization_id) {
+          acc[user.organization_id] = (acc[user.organization_id] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Transform the data to match our Organization type
+      return organizationsData.map(org => ({
+        id: org.id,
+        name: org.name,
+        description: `${org.name} - ${org.department} department`,
+        department: org.department,
+        facilities: facilitiesByDept[org.department] || 0,
+        members: usersByOrg[org.id] || 0,
+        equipment: Math.floor(Math.random() * 50) + 10 // Placeholder until we have equipment table
+      }));
     }
   });
 };

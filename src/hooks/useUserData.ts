@@ -21,91 +21,31 @@ export const useUserData = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async (): Promise<User[]> => {
-      // In a real application, we would fetch users from the database
-      // Since we don't have a users table yet, we'll use mock data for now
-      // but this hook is structured to work with a real database when available
+      // Fetch users from the database with their organization details
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select(`
+          id,
+          name,
+          email,
+          role,
+          avatar,
+          organization_id,
+          organizations:organization_id (
+            id,
+            name,
+            department
+          )
+        `)
+        .order('name');
       
-      // This would be the real implementation when a users table exists:
-      // const { data, error } = await supabase
-      //   .from('users')
-      //   .select('*, organizations(*)')
-      //   .order('name');
-      
-      // if (error) {
-      //   console.error('Error fetching users:', error);
-      //   throw new Error(error.message);
-      // }
-      
-      // For demonstration purposes only - using mock data until users table is created
-      console.warn('Mock user data being used - create a users table in Supabase for real data');
-      
-      // This simulates the data structure we'd get from Supabase
-      const mockUsers = [
-        {
-          id: '1',
-          name: 'Organization Admin',
-          email: 'org_admin@university.edu',
-          role: 'org_admin',
-          avatar: 'https://ui-avatars.com/api/?name=Org+Admin&background=0284c7&color=fff',
-          organization_id: '1',
-          organizations: {
-            id: '1',
-            name: 'Science Department',
-            department: 'Chemistry'
-          }
-        },
-        {
-          id: '2',
-          name: 'Lab Supervisor',
-          email: 'lab_supervisor@university.edu',
-          role: 'lab_supervisor',
-          avatar: 'https://ui-avatars.com/api/?name=Lab+Supervisor&background=0ea5e9&color=fff',
-          organization_id: '1',
-          organizations: {
-            id: '1',
-            name: 'Science Department',
-            department: 'Chemistry'
-          }
-        },
-        {
-          id: '3',
-          name: 'Facility Member',
-          email: 'facility_member@university.edu',
-          role: 'facility_member',
-          avatar: 'https://ui-avatars.com/api/?name=Facility+Member&background=38bdf8&color=fff',
-          organization_id: '1',
-          organizations: {
-            id: '1',
-            name: 'Science Department',
-            department: 'Chemistry'
-          }
-        },
-        {
-          id: '4',
-          name: 'Student User',
-          email: 'student@university.edu',
-          role: 'student',
-          avatar: 'https://ui-avatars.com/api/?name=Student+User&background=7dd3fc&color=fff',
-          organization_id: '2',
-          organizations: {
-            id: '2',
-            name: 'Engineering Department',
-            department: 'Computer Science'
-          }
-        },
-        {
-          id: '5',
-          name: 'Visitor User',
-          email: 'visitor@example.com',
-          role: 'visitor',
-          avatar: 'https://ui-avatars.com/api/?name=Visitor+User&background=bae6fd&color=fff',
-          organization_id: null,
-          organizations: null
-        }
-      ];
+      if (userError) {
+        console.error('Error fetching users:', userError);
+        throw new Error(userError.message);
+      }
       
       // Transform the data to match our User type
-      return mockUsers.map(user => ({
+      return userData.map(user => ({
         id: user.id,
         name: user.name,
         email: user.email,

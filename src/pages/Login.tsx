@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { UserRole } from '@/context/AuthContext';
+import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -33,7 +34,14 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginEmail || !loginPassword) return;
+    if (!loginEmail || !loginPassword) {
+      toast({
+        title: "Invalid input",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -41,6 +49,7 @@ const Login = () => {
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
+      // Error is already handled in the login function
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +57,14 @@ const Login = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!registerName || !registerEmail || !registerPassword || !registerRole) return;
+    if (!registerName || !registerEmail || !registerPassword || !registerRole) {
+      toast({
+        title: "Invalid input",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -56,6 +72,7 @@ const Login = () => {
       navigate('/dashboard');
     } catch (error) {
       console.error('Register error:', error);
+      // Error is already handled in the register function
     } finally {
       setIsLoading(false);
     }
@@ -94,9 +111,6 @@ const Login = () => {
                         required
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Demo emails: org_admin@university.edu, lab_supervisor@university.edu, facility_member@university.edu, student@university.edu, visitor@example.com
-                    </p>
                   </div>
                   
                   <div className="space-y-2">
@@ -113,9 +127,6 @@ const Login = () => {
                         required
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Any password will work for demo
-                    </p>
                   </div>
                   
                   <Button

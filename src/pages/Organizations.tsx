@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Building, Plus, Search, Edit, Trash, Users, Microscope, BoxesIcon } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -8,41 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/AuthContext';
-
-// Mock organizations
-const mockOrganizations = [
-  {
-    id: '1',
-    name: 'Science Department',
-    description: 'Chemistry and biology research labs',
-    department: 'Chemistry',
-    facilities: 3,
-    members: 15,
-    equipment: 48
-  },
-  {
-    id: '2',
-    name: 'Engineering Department',
-    description: 'Computer science and electrical engineering labs',
-    department: 'Computer Science',
-    facilities: 2,
-    members: 12,
-    equipment: 36
-  },
-  {
-    id: '3',
-    name: 'Medical Department',
-    description: 'Medical research and training facilities',
-    department: 'Biology',
-    facilities: 4,
-    members: 20,
-    equipment: 62
-  }
-];
+import { useOrganizationsData } from '@/hooks/useOrganizationsData';
+import { supabase } from '@/integrations/supabase/client';
 
 const Organizations = () => {
   const { user } = useAuth();
@@ -54,14 +23,7 @@ const Organizations = () => {
     department: ''
   });
 
-  const { data: organizations, isLoading } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      return mockOrganizations;
-    }
-  });
+  const { data: organizations, isLoading, refetch } = useOrganizationsData();
 
   // Filter organizations based on search
   const filteredOrganizations = organizations?.filter(org => 
@@ -77,13 +39,45 @@ const Organizations = () => {
     });
   };
 
-  const handleAddOrganization = () => {
-    toast({
-      title: "Organization added",
-      description: `${formData.name} has been added`,
-    });
-    setIsDialogOpen(false);
-    setFormData({ name: '', description: '', department: '' });
+  const handleAddOrganization = async () => {
+    if (!formData.name || !formData.department) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in both name and department fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .insert({
+          name: formData.name,
+          department: formData.department
+        })
+        .select();
+
+      if (error) throw error;
+      
+      toast({
+        title: "Organization added",
+        description: `${formData.name} has been added`,
+      });
+      
+      // Reset form and close dialog
+      setIsDialogOpen(false);
+      setFormData({ name: '', description: '', department: '' });
+      
+      // Refresh organizations data
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error adding organization",
+        description: error.message || "An error occurred",
+        variant: "destructive"
+      });
+    }
   };
 
   // Check if the user is allowed to manage organizations
@@ -153,7 +147,7 @@ const Organizations = () => {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Description (Optional)</Label>
                   <Input
                     id="description"
                     name="description"

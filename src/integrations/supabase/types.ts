@@ -116,6 +116,27 @@ export type Database = {
         }
         Relationships: []
       }
+      organizations: {
+        Row: {
+          created_at: string | null
+          department: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          department: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          department?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       purchase_items: {
         Row: {
           id: string
@@ -204,6 +225,50 @@ export type Database = {
           total_amount?: number
         }
         Relationships: []
+      }
+      users: {
+        Row: {
+          avatar: string | null
+          created_at: string | null
+          email: string
+          id: string
+          last_active: string | null
+          name: string
+          organization_id: string | null
+          role: string
+          status: string | null
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string | null
+          email: string
+          id: string
+          last_active?: string | null
+          name: string
+          organization_id?: string | null
+          role: string
+          status?: string | null
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          last_active?: string | null
+          name?: string
+          organization_id?: string | null
+          role?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_organization"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
