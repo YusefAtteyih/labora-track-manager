@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Calendar, CheckCircle, Clock, Filter, Plus, Search, Slash, X, XCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -11,21 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { mockBookingsData } from '@/data/bookings';
+import { useBookingData } from '@/hooks/useBookingData';
 
 const Bookings = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
   
-  const { data: bookings, isLoading } = useQuery({
-    queryKey: ['bookings'],
-    queryFn: async () => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      return mockBookingsData;
-    }
-  });
+  const { data: bookings, isLoading, isError } = useBookingData();
 
   // Filter bookings based on search query and filters
   const filteredBookings = bookings?.filter(booking => {
@@ -139,6 +131,10 @@ const Bookings = () => {
               <div className="text-center py-10">
                 <p className="text-muted-foreground">Loading bookings...</p>
               </div>
+            ) : isError ? (
+              <div className="text-center py-10">
+                <p className="text-destructive">Error loading bookings</p>
+              </div>
             ) : filteredBookings && filteredBookings.length > 0 ? (
               <div className="rounded-md border">
                 <Table>
@@ -222,6 +218,10 @@ const Bookings = () => {
             {isLoading ? (
               <div className="text-center py-10">
                 <p className="text-muted-foreground">Loading calendar view...</p>
+              </div>
+            ) : isError ? (
+              <div className="text-center py-10">
+                <p className="text-destructive">Error loading bookings</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

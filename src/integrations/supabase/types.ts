@@ -9,13 +9,219 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          attendees: number | null
+          created_at: string | null
+          end_date: string
+          facility_id: string | null
+          id: string
+          notes: string | null
+          purpose: string | null
+          start_date: string
+          status: string
+          user_avatar: string | null
+          user_id: string
+          user_name: string
+          user_role: string
+        }
+        Insert: {
+          attendees?: number | null
+          created_at?: string | null
+          end_date: string
+          facility_id?: string | null
+          id?: string
+          notes?: string | null
+          purpose?: string | null
+          start_date: string
+          status: string
+          user_avatar?: string | null
+          user_id: string
+          user_name: string
+          user_role: string
+        }
+        Update: {
+          attendees?: number | null
+          created_at?: string | null
+          end_date?: string
+          facility_id?: string | null
+          id?: string
+          notes?: string | null
+          purpose?: string | null
+          start_date?: string
+          status?: string
+          user_avatar?: string | null
+          user_id?: string
+          user_name?: string
+          user_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facilities: {
+        Row: {
+          available_for: string[] | null
+          capacity: number | null
+          created_at: string | null
+          department: string | null
+          description: string | null
+          features: string[] | null
+          id: string
+          image: string | null
+          location: string | null
+          name: string
+          open_hours: string | null
+          requires_approval: boolean | null
+          status: string
+          type: string
+        }
+        Insert: {
+          available_for?: string[] | null
+          capacity?: number | null
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          image?: string | null
+          location?: string | null
+          name: string
+          open_hours?: string | null
+          requires_approval?: boolean | null
+          status: string
+          type: string
+        }
+        Update: {
+          available_for?: string[] | null
+          capacity?: number | null
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          image?: string | null
+          location?: string | null
+          name?: string
+          open_hours?: string | null
+          requires_approval?: boolean | null
+          status?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      purchase_items: {
+        Row: {
+          id: string
+          name: string
+          price: number
+          purchase_id: string | null
+          quantity: number
+        }
+        Insert: {
+          id?: string
+          name: string
+          price: number
+          purchase_id?: string | null
+          quantity: number
+        }
+        Update: {
+          id?: string
+          name?: string
+          price?: number
+          purchase_id?: string | null
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_items_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by_id: string | null
+          approved_by_name: string | null
+          created_at: string | null
+          department: string
+          id: string
+          notes: string | null
+          priority: string
+          rejection_reason: string | null
+          requested_by_avatar: string | null
+          requested_by_id: string
+          requested_by_name: string
+          requested_by_role: string
+          status: string
+          title: string
+          total_amount: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_id?: string | null
+          approved_by_name?: string | null
+          created_at?: string | null
+          department: string
+          id: string
+          notes?: string | null
+          priority: string
+          rejection_reason?: string | null
+          requested_by_avatar?: string | null
+          requested_by_id: string
+          requested_by_name: string
+          requested_by_role: string
+          status: string
+          title: string
+          total_amount: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_id?: string | null
+          approved_by_name?: string | null
+          created_at?: string | null
+          department?: string
+          id?: string
+          notes?: string | null
+          priority?: string
+          rejection_reason?: string | null
+          requested_by_avatar?: string | null
+          requested_by_id?: string
+          requested_by_name?: string
+          requested_by_role?: string
+          status?: string
+          title?: string
+          total_amount?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_purchase_items: {
+        Args: {
+          purchase_id: string
+        }
+        Returns: {
+          id: string
+          name: string
+          quantity: number
+          price: number
+          total: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
