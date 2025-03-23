@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Building, Plus, Search, Edit, Trash, Users, Microscope, BoxesIcon } from 'lucide-react';
+import { Building, Plus, Search, Edit, Trash, Users, Microscope, BoxesIcon, BookOpen, School } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import OrganizationMembers from '@/components/organizations/OrganizationMembers';
 import EditOrganizationDialog from '@/components/organizations/EditOrganizationDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 
 const Organizations = () => {
   const { user } = useAuth();
@@ -23,6 +24,8 @@ const Organizations = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    university: 'University of Science and Technology',
+    faculty: '',
     department: ''
   });
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
@@ -36,7 +39,9 @@ const Organizations = () => {
   // Filter organizations based on search
   const filteredOrganizations = organizations?.filter(org => 
     org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    org.department.toLowerCase().includes(searchTerm.toLowerCase())
+    org.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    org.faculty.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    org.university.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -62,7 +67,10 @@ const Organizations = () => {
         .from('organizations')
         .insert({
           name: formData.name,
-          department: formData.department
+          department: formData.department,
+          university: formData.university,
+          faculty: formData.faculty,
+          description: formData.description
         })
         .select();
 
@@ -75,7 +83,13 @@ const Organizations = () => {
       
       // Reset form and close dialog
       setIsDialogOpen(false);
-      setFormData({ name: '', description: '', department: '' });
+      setFormData({ 
+        name: '', 
+        description: '', 
+        university: 'University of Science and Technology',
+        faculty: '',
+        department: '' 
+      });
       
       // Refresh organizations data
       refetch();
@@ -158,7 +172,7 @@ const Organizations = () => {
               Organizations
             </h1>
             <p className="text-muted-foreground">
-              Manage organizations, departments, and their resources
+              Manage university organizations, faculties, and departments
             </p>
           </div>
 
@@ -169,23 +183,34 @@ const Organizations = () => {
                 Add Organization
               </Button>
             </DialogTrigger>
-            <DialogContent className="glass-card">
+            <DialogContent className="glass-card max-w-lg">
               <DialogHeader>
                 <DialogTitle>Add New Organization</DialogTitle>
                 <DialogDescription>
-                  Fill in the details to create a new organization or department.
+                  Fill in the details to create a new organization structure.
                 </DialogDescription>
               </DialogHeader>
 
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Organization Name</Label>
+                  <Label htmlFor="university">University</Label>
                   <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
+                    id="university"
+                    name="university"
+                    value={formData.university}
                     onChange={handleInputChange}
-                    placeholder="Enter organization name"
+                    placeholder="Enter university name"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="faculty">Faculty</Label>
+                  <Input
+                    id="faculty"
+                    name="faculty"
+                    value={formData.faculty}
+                    onChange={handleInputChange}
+                    placeholder="Enter faculty name"
                   />
                 </div>
 
@@ -197,6 +222,17 @@ const Organizations = () => {
                     value={formData.department}
                     onChange={handleInputChange}
                     placeholder="Enter department name"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Organization Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Enter organization name"
                   />
                 </div>
 
@@ -244,8 +280,26 @@ const Organizations = () => {
             {filteredOrganizations.map((org) => (
               <Card key={org.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
-                  <CardTitle>{org.name}</CardTitle>
-                  <CardDescription>{org.department}</CardDescription>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle>{org.name}</CardTitle>
+                      <CardDescription className="mt-1">
+                        <div className="flex flex-col gap-1 mt-1">
+                          <div className="flex items-center">
+                            <School className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">{org.university}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <BookOpen className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">{org.faculty}</span>
+                          </div>
+                          <Badge variant="outline" className="w-fit mt-1">
+                            {org.department}
+                          </Badge>
+                        </div>
+                      </CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">{org.description}</p>

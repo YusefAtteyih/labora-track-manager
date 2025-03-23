@@ -20,6 +20,8 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    university: '',
+    faculty: '',
     department: '',
     description: ''
   });
@@ -29,6 +31,8 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
     if (organization) {
       setFormData({
         name: organization.name,
+        university: organization.university,
+        faculty: organization.faculty,
         department: organization.department,
         description: organization.description
       });
@@ -60,7 +64,10 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
         .from('organizations')
         .update({
           name: formData.name,
-          department: formData.department
+          university: formData.university,
+          faculty: formData.faculty,
+          department: formData.department,
+          description: formData.description
         })
         .eq('id', organization.id);
 
@@ -87,7 +94,7 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
 
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="glass-card">
+      <DialogContent className="glass-card max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Organization</DialogTitle>
           <DialogDescription>
@@ -97,13 +104,24 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="edit-name">Organization Name</Label>
+            <Label htmlFor="edit-university">University</Label>
             <Input
-              id="edit-name"
-              name="name"
-              value={formData.name}
+              id="edit-university"
+              name="university"
+              value={formData.university}
               onChange={handleInputChange}
-              placeholder="Enter organization name"
+              placeholder="Enter university name"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="edit-faculty">Faculty</Label>
+            <Input
+              id="edit-faculty"
+              name="faculty"
+              value={formData.faculty}
+              onChange={handleInputChange}
+              placeholder="Enter faculty name"
             />
           </div>
 
@@ -115,6 +133,17 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
               value={formData.department}
               onChange={handleInputChange}
               placeholder="Enter department name"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="edit-name">Organization Name</Label>
+            <Input
+              id="edit-name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Enter organization name"
             />
           </div>
 

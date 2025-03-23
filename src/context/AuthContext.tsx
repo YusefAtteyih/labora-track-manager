@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
@@ -6,11 +5,14 @@ import { supabase } from '@/integrations/supabase/client';
 // Define user roles with the new hierarchy
 export type UserRole = 'org_admin' | 'lab_supervisor' | 'facility_member' | 'student' | 'visitor';
 
-// Define organization type
+// Define organization type with the new structure
 export interface Organization {
   id: string;
   name: string;
+  university: string;
+  faculty: string;
   department: string;
+  description?: string;
 }
 
 // Define user type with organization
@@ -63,7 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             organizations:organization_id (
               id, 
               name, 
-              department
+              university,
+              faculty,
+              department,
+              description
             )
           `)
           .eq('id', session.user.id)
@@ -85,7 +90,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             organization: userData.organizations ? {
               id: userData.organizations.id,
               name: userData.organizations.name,
-              department: userData.organizations.department
+              university: userData.organizations.university || 'University of Science and Technology',
+              faculty: userData.organizations.faculty || 'Faculty of Science',
+              department: userData.organizations.department,
+              description: userData.organizations.description
             } : undefined
           };
           
@@ -136,7 +144,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             organizations:organization_id (
               id, 
               name, 
-              department
+              university,
+              faculty,
+              department,
+              description
             )
           `)
           .eq('id', data.user.id)
@@ -162,7 +173,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           organization: userData.organizations ? {
             id: userData.organizations.id,
             name: userData.organizations.name,
-            department: userData.organizations.department
+            university: userData.organizations.university || 'University of Science and Technology',
+            faculty: userData.organizations.faculty || 'Faculty of Science',
+            department: userData.organizations.department,
+            description: userData.organizations.description
           } : undefined
         };
         
@@ -229,7 +243,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             organizations:organization_id (
               id, 
               name, 
-              department
+              university,
+              faculty,
+              department,
+              description
             )
           `)
           .eq('id', data.user.id)
@@ -248,7 +265,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             organization: userData.organizations ? {
               id: userData.organizations.id,
               name: userData.organizations.name,
-              department: userData.organizations.department
+              university: userData.organizations.university || 'University of Science and Technology',
+              faculty: userData.organizations.faculty || 'Faculty of Science',
+              department: userData.organizations.department,
+              description: userData.organizations.description
             } : undefined
           };
           

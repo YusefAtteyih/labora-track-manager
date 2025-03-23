@@ -7,6 +7,8 @@ export interface Organization {
   id: string;
   name: string;
   description: string;
+  university: string;
+  faculty: string;
   department: string;
   facilities: number;
   members: number;
@@ -79,7 +81,7 @@ export const useOrganizationsData = () => {
       // Fetch organizations data
       const { data: organizationsData, error: organizationsError } = await supabase
         .from('organizations')
-        .select('id, name, department');
+        .select('id, name, department, university, faculty, description');
         
       if (organizationsError) {
         console.error('Error fetching organizations:', organizationsError);
@@ -126,7 +128,9 @@ export const useOrganizationsData = () => {
       return organizationsData.map(org => ({
         id: org.id,
         name: org.name,
-        description: `${org.name} - ${org.department} department`,
+        description: org.description || `${org.name} - ${org.department} department`,
+        university: org.university || 'University of Science and Technology',
+        faculty: org.faculty || 'Faculty of Science',
         department: org.department,
         facilities: facilitiesByDept[org.department] || 0,
         members: usersByOrg[org.id] || 0,

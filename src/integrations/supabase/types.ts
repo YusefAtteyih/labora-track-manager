@@ -156,20 +156,29 @@ export type Database = {
         Row: {
           created_at: string | null
           department: string
+          description: string | null
+          faculty: string | null
           id: string
           name: string
+          university: string | null
         }
         Insert: {
           created_at?: string | null
-          department: string
+          department?: string
+          description?: string | null
+          faculty?: string | null
           id?: string
           name: string
+          university?: string | null
         }
         Update: {
           created_at?: string | null
           department?: string
+          description?: string | null
+          faculty?: string | null
           id?: string
           name?: string
+          university?: string | null
         }
         Relationships: []
       }
