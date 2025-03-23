@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,7 +37,12 @@ const facilityFormSchema = z.object({
 
 type FormValues = z.infer<typeof facilityFormSchema>;
 
-const AddFacilityForm = () => {
+interface AddFacilityFormProps {
+  defaultType?: 'lab' | 'equipment';
+  returnPath?: string;
+}
+
+const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: AddFacilityFormProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -44,7 +50,7 @@ const AddFacilityForm = () => {
     resolver: zodResolver(facilityFormSchema),
     defaultValues: {
       name: '',
-      type: 'lab',
+      type: defaultType,
       description: '',
       location: '',
       capacity: 1,
@@ -108,7 +114,7 @@ const AddFacilityForm = () => {
       });
 
       // Navigate back to facilities list
-      navigate('/facilities');
+      navigate(returnPath);
     } catch (error) {
       console.error('Error adding facility:', error);
       toast({
