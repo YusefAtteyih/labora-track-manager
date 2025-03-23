@@ -10,8 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/AuthContext';
-import { useOrganizationsData } from '@/hooks/useOrganizationsData';
+import { Organization, useOrganizationsData } from '@/hooks/useOrganizationsData';
 import { supabase } from '@/integrations/supabase/client';
+import OrganizationMembers from '@/components/organizations/OrganizationMembers';
+import EditOrganizationDialog from '@/components/organizations/EditOrganizationDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const Organizations = () => {
   const { user } = useAuth();
@@ -22,6 +25,11 @@ const Organizations = () => {
     description: '',
     department: ''
   });
+  const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
+  const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: organizations, isLoading, refetch } = useOrganizationsData();
 
@@ -77,6 +85,52 @@ const Organizations = () => {
         description: error.message || "An error occurred",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleViewMembers = (organization: Organization) => {
+    setSelectedOrganization(organization);
+    setIsMembersDialogOpen(true);
+  };
+
+  const handleEditOrganization = (organization: Organization) => {
+    setSelectedOrganization(organization);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (organization: Organization) => {
+    setSelectedOrganization(organization);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteOrganization = async () => {
+    if (!selectedOrganization) return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .delete()
+        .eq('id', selectedOrganization.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Organization deleted",
+        description: `${selectedOrganization.name} has been deleted`,
+      });
+      
+      setIsDeleteDialogOpen(false);
+      setSelectedOrganization(null);
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting organization",
+        description: error.message || "An error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -215,15 +269,15 @@ const Organizations = () => {
                 </CardContent>
                 <Separator />
                 <CardFooter className="flex justify-between p-4">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleViewMembers(org)}>
                     <Users className="h-4 w-4 mr-1" />
                     Members
                   </Button>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditOrganization(org)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleDeleteClick(org)}>
                       <Trash className="h-4 w-4" />
                     </Button>
                   </div>
@@ -237,6 +291,49 @@ const Organizations = () => {
           </div>
         )}
       </div>
+
+      {/* Members Dialog */}
+      {selectedOrganization && (
+        <OrganizationMembers
+          organizationId={selectedOrganization.id}
+          organizationName={selectedOrganization.name}
+          isOpen={isMembersDialogOpen}
+          onClose={() => setIsMembersDialogOpen(false)}
+        />
+      )}
+
+      {/* Edit Organization Dialog */}
+      <EditOrganizationDialog
+        organization={selectedOrganization}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedOrganization(null);
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {selectedOrganization?.name} and remove all associated data.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteOrganization} 
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };

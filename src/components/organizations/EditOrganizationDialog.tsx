@@ -1,0 +1,147 @@
+
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Organization } from '@/hooks/useOrganizationsData';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
+
+interface EditOrganizationDialogProps {
+  organization: Organization | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizationDialogProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    department: '',
+    description: ''
+  });
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (organization) {
+      setFormData({
+        name: organization.name,
+        department: organization.department,
+        description: organization.description
+      });
+    }
+  }, [organization]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (!organization) return;
+    if (!formData.name || !formData.department) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in both name and department fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({
+          name: formData.name,
+          department: formData.department
+        })
+        .eq('id', organization.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Organization updated",
+        description: `${formData.name} has been updated`,
+      });
+      
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: "Error updating organization",
+        description: error.message || "An error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
+      <DialogContent className="glass-card">
+        <DialogHeader>
+          <DialogTitle>Edit Organization</DialogTitle>
+          <DialogDescription>
+            Update the organization information
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="edit-name">Organization Name</Label>
+            <Input
+              id="edit-name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Enter organization name"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="edit-department">Department</Label>
+            <Input
+              id="edit-department"
+              name="department"
+              value={formData.department}
+              onChange={handleInputChange}
+              placeholder="Enter department name"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="edit-description">Description (Optional)</Label>
+            <Textarea
+              id="edit-description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Brief description of the organization"
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? 'Updating...' : 'Update Organization'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default EditOrganizationDialog;

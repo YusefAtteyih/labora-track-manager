@@ -49,10 +49,27 @@ export const useOrganizationsData = () => {
         }
       )
       .subscribe();
+      
+    const facilityChannel = supabase
+      .channel('facility-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'facilities'
+        },
+        () => {
+          // Facility table changes can affect organization facility counts
+          queryClient.invalidateQueries({ queryKey: ['organizations'] });
+        }
+      )
+      .subscribe();
 
     return () => {
       supabase.removeChannel(orgChannel);
       supabase.removeChannel(userChannel);
+      supabase.removeChannel(facilityChannel);
     };
   }, [queryClient]);
 
