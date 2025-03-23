@@ -76,32 +76,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               parent_id
             )
           `)
-          .eq('id', session.user.id)
-          .single();
+          .eq('id', session.user.id);
         
         if (error) {
           console.error('Error fetching user data:', error);
           throw error;
         }
         
-        if (userData) {
-          console.log('User data received:', userData);
+        if (userData && userData.length > 0) {
+          console.log('User data received:', userData[0]);
           
           const authUser: User = {
-            id: userData.id,
-            name: userData.name,
-            email: userData.email,
-            role: userData.role as UserRole,
-            avatar: userData.avatar,
-            facultyId: userData.faculty_id,
-            faculty: userData.faculties ? {
-              id: userData.faculties.id,
-              name: userData.faculties.name,
-              university: userData.faculties.university || 'University of Science and Technology',
-              faculty: userData.faculties.faculty || 'Faculty of Science',
-              department: userData.faculties.department,
-              description: userData.faculties.description,
-              parentId: userData.faculties.parent_id
+            id: userData[0].id,
+            name: userData[0].name,
+            email: userData[0].email,
+            role: userData[0].role as UserRole,
+            avatar: userData[0].avatar,
+            facultyId: userData[0].faculty_id,
+            faculty: userData[0].faculties ? {
+              id: userData[0].faculties.id,
+              name: userData[0].faculties.name,
+              university: userData[0].faculties.university || 'University of Science and Technology',
+              faculty: userData[0].faculties.faculty || 'Faculty of Science',
+              department: userData[0].faculties.department,
+              description: userData[0].faculties.description,
+              parentId: userData[0].faculties.parent_id
             } : undefined
           };
           
@@ -110,6 +109,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             title: "Authenticated",
             description: `Welcome back, ${authUser.name}`,
           });
+        } else {
+          console.warn('No user data found for this authenticated session');
+          logout(); // Automatically log out if user data is missing
         }
       }
     } catch (error) {
@@ -159,8 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               parent_id
             )
           `)
-          .eq('id', data.user.id)
-          .single();
+          .eq('id', data.user.id);
           
         if (userError) {
           console.error('Error fetching user data after login:', userError);
@@ -172,30 +173,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw userError;
         }
         
-        const authUser: User = {
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          role: userData.role as UserRole,
-          avatar: userData.avatar,
-          facultyId: userData.faculty_id,
-          faculty: userData.faculties ? {
-            id: userData.faculties.id,
-            name: userData.faculties.name,
-            university: userData.faculties.university || 'University of Science and Technology',
-            faculty: userData.faculties.faculty || 'Faculty of Science',
-            department: userData.faculties.department,
-            description: userData.faculties.description,
-            parentId: userData.faculties.parent_id
-          } : undefined
-        };
-        
-        setUser(authUser);
-        
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${authUser.name}!`,
-        });
+        if (userData && userData.length > 0) {
+          const authUser: User = {
+            id: userData[0].id,
+            name: userData[0].name,
+            email: userData[0].email,
+            role: userData[0].role as UserRole,
+            avatar: userData[0].avatar,
+            facultyId: userData[0].faculty_id,
+            faculty: userData[0].faculties ? {
+              id: userData[0].faculties.id,
+              name: userData[0].faculties.name,
+              university: userData[0].faculties.university || 'University of Science and Technology',
+              faculty: userData[0].faculties.faculty || 'Faculty of Science',
+              department: userData[0].faculties.department,
+              description: userData[0].faculties.description,
+              parentId: userData[0].faculties.parent_id
+            } : undefined
+          };
+          
+          setUser(authUser);
+          
+          toast({
+            title: "Login successful",
+            description: `Welcome back, ${authUser.name}!`,
+          });
+        } else {
+          console.error('No user data found after login');
+          toast({
+            title: "Login issue",
+            description: "User profile not found. Please contact support.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -231,57 +241,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data.user) {
-        // The trigger created on auth.users will automatically create a user in our users table
-        toast({
-          title: "Registration successful",
-          description: `Welcome, ${name}!`,
-        });
+        console.log('User signed up with auth, creating profile in DB');
         
-        // Wait a moment for the trigger to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Fetch the new user profile
-        const { data: userData, error: userError } = await supabase
+        // Manually create user record to ensure it exists (in case trigger fails)
+        const { error: insertError } = await supabase
           .from('users')
-          .select(`
-            id, 
-            name, 
-            email, 
-            role, 
-            avatar, 
-            faculty_id,
-            faculties:faculty_id (
-              id, 
-              name, 
-              university,
-              faculty,
-              department,
-              description,
-              parent_id
-            )
-          `)
-          .eq('id', data.user.id)
-          .single();
-          
-        if (userError) {
-          console.error('Error fetching new user data:', userError);
+          .insert([
+            { 
+              id: data.user.id,
+              name: name, 
+              email: data.user.email,
+              role: role,
+              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=38bdf8&color=fff`
+            }
+          ]);
+
+        if (insertError) {
+          console.error('Error creating user profile:', insertError);
+          toast({
+            title: "Profile creation failed",
+            description: insertError.message,
+            variant: "destructive",
+          });
         } else {
+          toast({
+            title: "Registration successful",
+            description: `Welcome, ${name}!`,
+          });
+          
+          // Set the user state directly with the data we have
           const authUser: User = {
-            id: userData.id,
-            name: userData.name,
-            email: userData.email,
-            role: userData.role as UserRole,
-            avatar: userData.avatar,
-            facultyId: userData.faculty_id,
-            faculty: userData.faculties ? {
-              id: userData.faculties.id,
-              name: userData.faculties.name,
-              university: userData.faculties.university || 'University of Science and Technology',
-              faculty: userData.faculties.faculty || 'Faculty of Science',
-              department: userData.faculties.department,
-              description: userData.faculties.description,
-              parentId: userData.faculties.parent_id
-            } : undefined
+            id: data.user.id,
+            name: name,
+            email: data.user.email || '',
+            role: role,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=38bdf8&color=fff`
           };
           
           setUser(authUser);

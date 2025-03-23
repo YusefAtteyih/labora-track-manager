@@ -56,6 +56,7 @@ export const useUserData = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           console.warn('No active session, users will be filtered by RLS');
+          return [];
         }
         
         // Fetch users from the database with their faculty details
@@ -84,6 +85,11 @@ export const useUserData = () => {
         }
         
         console.log('Users data received:', userData);
+        
+        if (!userData) {
+          console.warn('No user data returned from query');
+          return [];
+        }
         
         // Transform the data to match our User type
         return userData.map(user => ({

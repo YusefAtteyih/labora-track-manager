@@ -82,6 +82,12 @@ export const useFacultiesData = () => {
         // Add logging to debug RLS issues
         console.log('Fetching faculties data');
         
+        // Check session first
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.warn('No active session, faculties may be filtered by RLS');
+        }
+        
         // Fetch organizations data
         const { data: facultiesData, error: facultiesError } = await supabase
           .from('faculties')
@@ -94,6 +100,11 @@ export const useFacultiesData = () => {
         
         console.log('Faculties data received:', facultiesData);
         
+        if (!facultiesData) {
+          console.warn('No faculties data returned from query');
+          return [];
+        }
+        
         // Fetch labs data to get counts by faculty
         const { data: labs, error: labsError } = await supabase
           .from('labs')
@@ -105,12 +116,12 @@ export const useFacultiesData = () => {
         }
         
         // Count labs by faculty_id
-        const labsByFaculty = labs.reduce((acc, lab) => {
+        const labsByFaculty = labs?.reduce((acc, lab) => {
           if (lab.faculty_id) {
             acc[lab.faculty_id] = (acc[lab.faculty_id] || 0) + 1;
           }
           return acc;
-        }, {} as Record<string, number>);
+        }, {} as Record<string, number>) || {};
         
         // Fetch users count by organization
         const { data: users, error: usersError } = await supabase
@@ -123,12 +134,12 @@ export const useFacultiesData = () => {
         }
         
         // Count users by organization
-        const usersByOrg = users.reduce((acc, user) => {
+        const usersByOrg = users?.reduce((acc, user) => {
           if (user.faculty_id) {
             acc[user.faculty_id] = (acc[user.faculty_id] || 0) + 1;
           }
           return acc;
-        }, {} as Record<string, number>);
+        }, {} as Record<string, number>) || {};
         
         // Transform the data to match our Organization type
         return facultiesData.map(org => ({

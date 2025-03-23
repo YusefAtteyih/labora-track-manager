@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Beaker, LockIcon, MailIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   
   // Login form state
@@ -30,7 +30,14 @@ const Login = () => {
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
-  const [registerRole, setRegisterRole] = useState<UserRole>('student');
+  const [registerRole, setRegisterRole] = useState<UserRole>('org_admin');
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +53,7 @@ const Login = () => {
     setIsLoading(true);
     try {
       await login(loginEmail, loginPassword);
-      navigate('/dashboard');
+      // Navigation will happen in the useEffect if login is successful
     } catch (error) {
       console.error('Login error:', error);
       // Error is already handled in the login function
@@ -68,8 +75,9 @@ const Login = () => {
     
     setIsLoading(true);
     try {
+      console.log('Registering user with role:', registerRole);
       await register(registerName, registerEmail, registerPassword, registerRole);
-      navigate('/dashboard');
+      // Navigation will happen in the useEffect if registration is successful
     } catch (error) {
       console.error('Register error:', error);
       // Error is already handled in the register function
@@ -179,6 +187,7 @@ const Login = () => {
                   <div className="space-y-2">
                     <Label htmlFor="register-role">Role</Label>
                     <Select 
+                      defaultValue="org_admin"
                       value={registerRole} 
                       onValueChange={(value) => setRegisterRole(value as UserRole)}
                     >
@@ -186,10 +195,10 @@ const Login = () => {
                         <SelectValue placeholder="Select a role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="facility_member">Facility Member</SelectItem>
-                        <SelectItem value="lab_supervisor">Lab Supervisor</SelectItem>
                         <SelectItem value="org_admin">Organization Admin</SelectItem>
+                        <SelectItem value="lab_supervisor">Lab Supervisor</SelectItem>
+                        <SelectItem value="facility_member">Facility Member</SelectItem>
+                        <SelectItem value="student">Student</SelectItem>
                         <SelectItem value="visitor">Visitor</SelectItem>
                       </SelectContent>
                     </Select>
