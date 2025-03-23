@@ -23,8 +23,56 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/AuthContext';
 import { mockBookingsData } from '@/data/bookings';
 
+// Define types for our approval requests
+interface BookingRequest {
+  id: string;
+  facility: {
+    id: string;
+    name: string;
+    location: string;
+    type: string;
+  };
+  user: {
+    id: string;
+    name: string;
+    role: string;
+    avatar: string;
+  };
+  startDate: string;
+  endDate: string;
+  status: string;
+  purpose: string;
+  attendees: number;
+  notes: string;
+}
+
+interface PurchaseRequest {
+  id: string;
+  requestType: string;
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  requestedBy: {
+    id: string;
+    name: string;
+    role: string;
+    avatar: string;
+  };
+  department: string;
+  justification: string;
+  dateRequested: string;
+  status: string;
+}
+
+type ApprovalRequest = {
+  id: string;
+  requestType: 'booking' | 'purchase';
+  details: BookingRequest | PurchaseRequest;
+};
+
 // Mock purchase requests pending approval
-const mockPurchaseRequests = [
+const mockPurchaseRequests: PurchaseRequest[] = [
   {
     id: 'pr-001',
     requestType: 'purchase',
@@ -78,15 +126,15 @@ const Approvals = () => {
       await new Promise(resolve => setTimeout(resolve, 800));
       
       // Combine both types of requests
-      const allRequests = [
+      const allRequests: ApprovalRequest[] = [
         ...pendingBookings.map(booking => ({
           id: booking.id,
-          requestType: 'booking',
+          requestType: 'booking' as const,
           details: booking
         })),
         ...mockPurchaseRequests.map(purchase => ({
           id: purchase.id,
-          requestType: 'purchase',
+          requestType: 'purchase' as const,
           details: purchase
         }))
       ];
@@ -95,15 +143,30 @@ const Approvals = () => {
     }
   });
 
+  // Type guard functions to safely access properties
+  const isBookingRequest = (request: ApprovalRequest): request is ApprovalRequest & { details: BookingRequest } => {
+    return request.requestType === 'booking';
+  };
+
+  const isPurchaseRequest = (request: ApprovalRequest): request is ApprovalRequest & { details: PurchaseRequest } => {
+    return request.requestType === 'purchase';
+  };
+
   // Filter requests based on search and type
   const filteredRequests = approvalRequests?.filter(request => {
-    const matchesSearch = searchQuery === '' || 
-      (request.requestType === 'booking' && 
-        (request.details.facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         request.details.user.name.toLowerCase().includes(searchQuery.toLowerCase()))) ||
-      (request.requestType === 'purchase' && 
-        (request.details.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         request.details.requestedBy.name.toLowerCase().includes(searchQuery.toLowerCase())));
+    let matchesSearch = false;
+    
+    if (searchQuery === '') {
+      matchesSearch = true;
+    } else if (isBookingRequest(request)) {
+      matchesSearch = 
+        request.details.facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.details.user.name.toLowerCase().includes(searchQuery.toLowerCase());
+    } else if (isPurchaseRequest(request)) {
+      matchesSearch = 
+        request.details.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.details.requestedBy.name.toLowerCase().includes(searchQuery.toLowerCase());
+    }
     
     const matchesType = filterType === 'all' || request.requestType === filterType;
     
@@ -200,7 +263,7 @@ const Approvals = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <CardTitle className="text-lg flex items-center">
-                            {request.requestType === 'booking' ? (
+                            {isBookingRequest(request) ? (
                               <>
                                 <Calendar className="h-4 w-4 mr-2 text-blue-500" />
                                 Facility Booking Request
@@ -213,7 +276,7 @@ const Approvals = () => {
                             )}
                           </CardTitle>
                           <CardDescription>
-                            {request.requestType === 'booking' 
+                            {isBookingRequest(request) 
                               ? `${request.details.facility.name} - ${new Date(request.details.startDate).toLocaleDateString()}`
                               : `${request.details.itemName} - ${request.details.quantity} units`
                             }
@@ -228,12 +291,12 @@ const Approvals = () => {
                       <div className="flex items-center mt-2">
                         <Avatar className="h-8 w-8 mr-2">
                           <AvatarImage src={
-                            request.requestType === 'booking' 
+                            isBookingRequest(request) 
                               ? request.details.user.avatar 
                               : request.details.requestedBy.avatar
                           } />
                           <AvatarFallback>
-                            {request.requestType === 'booking' 
+                            {isBookingRequest(request) 
                               ? request.details.user.name.substring(0, 2).toUpperCase() 
                               : request.details.requestedBy.name.substring(0, 2).toUpperCase()
                             }
@@ -241,13 +304,13 @@ const Approvals = () => {
                         </Avatar>
                         <div>
                           <div className="font-medium">
-                            {request.requestType === 'booking' 
+                            {isBookingRequest(request) 
                               ? request.details.user.name 
                               : request.details.requestedBy.name
                             }
                           </div>
                           <div className="text-xs text-muted-foreground capitalize">
-                            {request.requestType === 'booking' 
+                            {isBookingRequest(request) 
                               ? request.details.user.role 
                               : request.details.requestedBy.role.replace('_', ' ')
                             }
@@ -258,19 +321,19 @@ const Approvals = () => {
                         <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
                         <div>
                           Requested on {new Date(
-                            request.requestType === 'booking' 
+                            isBookingRequest(request) 
                               ? request.details.startDate 
                               : request.details.dateRequested
                           ).toLocaleString()}
                         </div>
                       </div>
-                      {request.requestType === 'booking' && (
+                      {isBookingRequest(request) && (
                         <div className="mt-2 text-sm">
                           <div className="font-medium">Purpose:</div>
                           <p>{request.details.purpose}</p>
                         </div>
                       )}
-                      {request.requestType === 'purchase' && (
+                      {isPurchaseRequest(request) && (
                         <div className="mt-2 text-sm">
                           <div className="font-medium">Justification:</div>
                           <p>{request.details.justification}</p>
@@ -327,7 +390,7 @@ const Approvals = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredRequests
-                      .filter(r => r.requestType === 'booking')
+                      .filter(isBookingRequest)
                       .map(request => (
                         <TableRow key={request.id}>
                           <TableCell>
@@ -408,7 +471,7 @@ const Approvals = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredRequests
-                      .filter(r => r.requestType === 'purchase')
+                      .filter(isPurchaseRequest)
                       .map(request => (
                         <TableRow key={request.id}>
                           <TableCell>

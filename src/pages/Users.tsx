@@ -10,7 +10,7 @@ import {
   Trash, 
   MoreHorizontal,
   Shield,
-  Buildings,
+  Building,
   User
 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -196,7 +196,7 @@ const Users = () => {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'org_admin':
-        return <Buildings className="h-3.5 w-3.5 mr-1.5" />;
+        return <Building className="h-3.5 w-3.5 mr-1.5" />;
       case 'lab_supervisor':
         return <Shield className="h-3.5 w-3.5 mr-1.5" />;
       case 'facility_member':
