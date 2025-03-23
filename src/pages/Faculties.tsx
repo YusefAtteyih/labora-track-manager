@@ -93,6 +93,7 @@ const Faculties = () => {
       // Refresh organizations data
       refetch();
     } catch (error: any) {
+      console.error("Error adding faculty:", error);
       toast({
         title: "Error adding faculty",
         description: error.message || "An error occurred",
@@ -137,6 +138,7 @@ const Faculties = () => {
       setSelectedOrganization(null);
       refetch();
     } catch (error: any) {
+      console.error("Error deleting faculty:", error);
       toast({
         title: "Error deleting faculty",
         description: error.message || "An error occurred",

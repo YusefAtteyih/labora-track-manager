@@ -60,6 +60,7 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
 
     setIsSubmitting(true);
     try {
+      console.log("Updating faculty with ID:", organization.id);
       const { error } = await supabase
         .from('faculties')
         .update({
@@ -71,7 +72,10 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
         })
         .eq('id', organization.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
       
       toast({
         title: "Faculty updated",
@@ -82,6 +86,7 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
       queryClient.invalidateQueries({ queryKey: ['faculties'] });
       onClose();
     } catch (error: any) {
+      console.error("Error in handleSubmit:", error);
       toast({
         title: "Error updating faculty",
         description: error.message || "An error occurred",
