@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Organization } from '@/hooks/useOrganizationsData';
+import { Organization } from '@/hooks/useFacultiesData';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,7 +61,7 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
     setIsSubmitting(true);
     try {
       const { error } = await supabase
-        .from('organizations')
+        .from('faculties')
         .update({
           name: formData.name,
           university: formData.university,
@@ -74,16 +74,16 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
       if (error) throw error;
       
       toast({
-        title: "Organization updated",
+        title: "Faculty updated",
         description: `${formData.name} has been updated`,
       });
       
       // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      queryClient.invalidateQueries({ queryKey: ['faculties'] });
       onClose();
     } catch (error: any) {
       toast({
-        title: "Error updating organization",
+        title: "Error updating faculty",
         description: error.message || "An error occurred",
         variant: "destructive"
       });
@@ -96,9 +96,9 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
       <DialogContent className="glass-card max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit Organization</DialogTitle>
+          <DialogTitle>Edit Faculty</DialogTitle>
           <DialogDescription>
-            Update the organization information
+            Update the faculty information
           </DialogDescription>
         </DialogHeader>
 
@@ -137,13 +137,13 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit-name">Organization Name</Label>
+            <Label htmlFor="edit-name">Faculty Name</Label>
             <Input
               id="edit-name"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              placeholder="Enter organization name"
+              placeholder="Enter faculty name"
             />
           </div>
 
@@ -154,7 +154,7 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              placeholder="Brief description of the organization"
+              placeholder="Brief description of the faculty"
               rows={3}
             />
           </div>
@@ -165,7 +165,7 @@ const EditOrganizationDialog = ({ organization, isOpen, onClose }: EditOrganizat
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Updating...' : 'Update Organization'}
+            {isSubmitting ? 'Updating...' : 'Update Faculty'}
           </Button>
         </DialogFooter>
       </DialogContent>

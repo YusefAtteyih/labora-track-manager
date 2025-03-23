@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,7 +24,7 @@ const OrganizationMembers = ({ organizationId, organizationName, isOpen, onClose
       const { data, error } = await supabase
         .from('users')
         .select('id, name, email, role, avatar')
-        .eq('organization_id', organizationId)
+        .eq('faculty_id', organizationId)
         .order('name');
         
       if (error) {

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
 
-export interface Faculty {
+export interface Organization {
   id: string;
   name: string;
   description: string;
@@ -13,7 +13,6 @@ export interface Faculty {
   facilities: number;
   members: number;
   equipment: number;
-  parentId?: string;
 }
 
 export const useFacultiesData = () => {
@@ -21,8 +20,8 @@ export const useFacultiesData = () => {
 
   // Set up real-time subscription
   useEffect(() => {
-    const facultyChannel = supabase
-      .channel('faculty-changes')
+    const orgChannel = supabase
+      .channel('org-changes')
       .on(
         'postgres_changes',
         {
@@ -47,7 +46,7 @@ export const useFacultiesData = () => {
           table: 'users'
         },
         () => {
-          // Users table changes can affect faculty member counts
+          // Users table changes can affect organization member counts
           queryClient.invalidateQueries({ queryKey: ['faculties'] });
         }
       )
@@ -63,14 +62,14 @@ export const useFacultiesData = () => {
           table: 'facilities'
         },
         () => {
-          // Facility table changes can affect faculty facility counts
+          // Facility table changes can affect organization facility counts
           queryClient.invalidateQueries({ queryKey: ['faculties'] });
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(facultyChannel);
+      supabase.removeChannel(orgChannel);
       supabase.removeChannel(userChannel);
       supabase.removeChannel(facilityChannel);
     };
@@ -78,11 +77,11 @@ export const useFacultiesData = () => {
 
   return useQuery({
     queryKey: ['faculties'],
-    queryFn: async (): Promise<Faculty[]> => {
-      // Fetch faculties data
+    queryFn: async (): Promise<Organization[]> => {
+      // Fetch organizations data
       const { data: facultiesData, error: facultiesError } = await supabase
         .from('faculties')
-        .select('id, name, department, university, faculty, description, parent_id');
+        .select('id, name, department, university, faculty, description');
         
       if (facultiesError) {
         console.error('Error fetching faculties:', facultiesError);
@@ -107,7 +106,7 @@ export const useFacultiesData = () => {
         return acc;
       }, {} as Record<string, number>);
       
-      // Fetch users count by faculty
+      // Fetch users count by organization
       const { data: users, error: usersError } = await supabase
         .from('users')
         .select('faculty_id');
@@ -117,26 +116,25 @@ export const useFacultiesData = () => {
         throw new Error(usersError.message);
       }
       
-      // Count users by faculty
-      const usersByFaculty = users.reduce((acc, user) => {
+      // Count users by organization
+      const usersByOrg = users.reduce((acc, user) => {
         if (user.faculty_id) {
           acc[user.faculty_id] = (acc[user.faculty_id] || 0) + 1;
         }
         return acc;
       }, {} as Record<string, number>);
       
-      // Transform the data to match our Faculty type
-      return facultiesData.map(faculty => ({
-        id: faculty.id,
-        name: faculty.name,
-        description: faculty.description || `${faculty.name} - ${faculty.department} department`,
-        university: faculty.university || 'University of Science and Technology',
-        faculty: faculty.faculty || 'Faculty of Science',
-        department: faculty.department,
-        facilities: facilitiesByDept[faculty.department] || 0,
-        members: usersByFaculty[faculty.id] || 0,
-        equipment: Math.floor(Math.random() * 50) + 10, // Will keep random for equipment until we have equipment table
-        parentId: faculty.parent_id
+      // Transform the data to match our Organization type
+      return facultiesData.map(org => ({
+        id: org.id,
+        name: org.name,
+        description: org.description || `${org.name} - ${org.department} department`,
+        university: org.university || 'University of Science and Technology',
+        faculty: org.faculty || 'Faculty of Science',
+        department: org.department,
+        facilities: facilitiesByDept[org.department] || 0,
+        members: usersByOrg[org.id] || 0,
+        equipment: Math.floor(Math.random() * 50) + 10 // Will keep random for equipment until we have equipment table
       }));
     }
   });
