@@ -35,8 +35,8 @@ const navItems: NavItem[] = [
     icon: Home,
   },
   {
-    title: 'Organizations',
-    href: '/organizations',
+    title: 'Faculties',
+    href: '/faculties',
     icon: Building,
     roles: ['org_admin'],
   },
@@ -54,7 +54,7 @@ const navItems: NavItem[] = [
   },
   {
     title: 'Labs',
-    href: '/facilities',
+    href: '/labs',
     icon: Microscope,
   },
   {
@@ -126,12 +126,12 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, toggleSidebar }) => {
 
         <Separator />
 
-        {/* Organization info if user is part of one */}
-        {user?.organization && (
+        {/* Faculty info if user is part of one */}
+        {user?.faculty && (
           <div className="px-4 py-2">
             <div className="bg-primary/5 rounded-md p-2">
-              <p className="text-xs font-medium text-primary">{user.organization.name}</p>
-              <p className="text-xs text-muted-foreground">{user.organization.department}</p>
+              <p className="text-xs font-medium text-primary">{user.faculty.name}</p>
+              <p className="text-xs text-muted-foreground">{user.faculty.department}</p>
             </div>
           </div>
         )}

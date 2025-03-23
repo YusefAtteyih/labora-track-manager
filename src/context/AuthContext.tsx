@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
@@ -5,25 +6,26 @@ import { supabase } from '@/integrations/supabase/client';
 // Define user roles with the new hierarchy
 export type UserRole = 'org_admin' | 'lab_supervisor' | 'facility_member' | 'student' | 'visitor';
 
-// Define organization type with the new structure
-export interface Organization {
+// Define faculty type with the new structure
+export interface Faculty {
   id: string;
   name: string;
   university: string;
   faculty: string;
   department: string;
   description?: string;
+  parentId?: string;
 }
 
-// Define user type with organization
+// Define user type with faculty
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   avatar?: string;
-  organizationId?: string;
-  organization?: Organization;
+  facultyId?: string;
+  faculty?: Faculty;
 }
 
 // Auth context interface
@@ -61,14 +63,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email, 
             role, 
             avatar, 
-            organization_id,
-            organizations:organization_id (
+            faculty_id,
+            faculties:faculty_id (
               id, 
               name, 
               university,
               faculty,
               department,
-              description
+              description,
+              parent_id
             )
           `)
           .eq('id', session.user.id)
@@ -86,14 +89,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: userData.email,
             role: userData.role as UserRole,
             avatar: userData.avatar,
-            organizationId: userData.organization_id,
-            organization: userData.organizations ? {
-              id: userData.organizations.id,
-              name: userData.organizations.name,
-              university: userData.organizations.university || 'University of Science and Technology',
-              faculty: userData.organizations.faculty || 'Faculty of Science',
-              department: userData.organizations.department,
-              description: userData.organizations.description
+            facultyId: userData.faculty_id,
+            faculty: userData.faculties ? {
+              id: userData.faculties.id,
+              name: userData.faculties.name,
+              university: userData.faculties.university || 'University of Science and Technology',
+              faculty: userData.faculties.faculty || 'Faculty of Science',
+              department: userData.faculties.department,
+              description: userData.faculties.description,
+              parentId: userData.faculties.parent_id
             } : undefined
           };
           
@@ -140,14 +144,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email, 
             role, 
             avatar, 
-            organization_id,
-            organizations:organization_id (
+            faculty_id,
+            faculties:faculty_id (
               id, 
               name, 
               university,
               faculty,
               department,
-              description
+              description,
+              parent_id
             )
           `)
           .eq('id', data.user.id)
@@ -169,14 +174,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: userData.email,
           role: userData.role as UserRole,
           avatar: userData.avatar,
-          organizationId: userData.organization_id,
-          organization: userData.organizations ? {
-            id: userData.organizations.id,
-            name: userData.organizations.name,
-            university: userData.organizations.university || 'University of Science and Technology',
-            faculty: userData.organizations.faculty || 'Faculty of Science',
-            department: userData.organizations.department,
-            description: userData.organizations.description
+          facultyId: userData.faculty_id,
+          faculty: userData.faculties ? {
+            id: userData.faculties.id,
+            name: userData.faculties.name,
+            university: userData.faculties.university || 'University of Science and Technology',
+            faculty: userData.faculties.faculty || 'Faculty of Science',
+            department: userData.faculties.department,
+            description: userData.faculties.description,
+            parentId: userData.faculties.parent_id
           } : undefined
         };
         
@@ -239,14 +245,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email, 
             role, 
             avatar, 
-            organization_id,
-            organizations:organization_id (
+            faculty_id,
+            faculties:faculty_id (
               id, 
               name, 
               university,
               faculty,
               department,
-              description
+              description,
+              parent_id
             )
           `)
           .eq('id', data.user.id)
@@ -261,14 +268,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: userData.email,
             role: userData.role as UserRole,
             avatar: userData.avatar,
-            organizationId: userData.organization_id,
-            organization: userData.organizations ? {
-              id: userData.organizations.id,
-              name: userData.organizations.name,
-              university: userData.organizations.university || 'University of Science and Technology',
-              faculty: userData.organizations.faculty || 'Faculty of Science',
-              department: userData.organizations.department,
-              description: userData.organizations.description
+            facultyId: userData.faculty_id,
+            faculty: userData.faculties ? {
+              id: userData.faculties.id,
+              name: userData.faculties.name,
+              university: userData.faculties.university || 'University of Science and Technology',
+              faculty: userData.faculties.faculty || 'Faculty of Science',
+              department: userData.faculties.department,
+              description: userData.faculties.description,
+              parentId: userData.faculties.parent_id
             } : undefined
           };
           

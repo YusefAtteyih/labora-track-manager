@@ -122,7 +122,48 @@ export type Database = {
             foreignKeyName: "facilities_faculty_id_fkey"
             columns: ["faculty_id"]
             isOneToOne: false
-            referencedRelation: "organizations"
+            referencedRelation: "faculties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      faculties: {
+        Row: {
+          created_at: string | null
+          department: string
+          description: string | null
+          faculty: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          university: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string
+          description?: string | null
+          faculty?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          university?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string
+          description?: string | null
+          faculty?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          university?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faculties_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "faculties"
             referencedColumns: ["id"]
           },
         ]
@@ -173,36 +214,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      organizations: {
-        Row: {
-          created_at: string | null
-          department: string
-          description: string | null
-          faculty: string | null
-          id: string
-          name: string
-          university: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          department?: string
-          description?: string | null
-          faculty?: string | null
-          id?: string
-          name: string
-          university?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          department?: string
-          description?: string | null
-          faculty?: string | null
-          id?: string
-          name?: string
-          university?: string | null
-        }
-        Relationships: []
       }
       purchase_items: {
         Row: {
@@ -298,10 +309,10 @@ export type Database = {
           avatar: string | null
           created_at: string | null
           email: string
+          faculty_id: string | null
           id: string
           last_active: string | null
           name: string
-          organization_id: string | null
           role: string
           status: string | null
         }
@@ -309,10 +320,10 @@ export type Database = {
           avatar?: string | null
           created_at?: string | null
           email: string
+          faculty_id?: string | null
           id: string
           last_active?: string | null
           name: string
-          organization_id?: string | null
           role: string
           status?: string | null
         }
@@ -320,19 +331,19 @@ export type Database = {
           avatar?: string | null
           created_at?: string | null
           email?: string
+          faculty_id?: string | null
           id?: string
           last_active?: string | null
           name?: string
-          organization_id?: string | null
           role?: string
           status?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fk_organization"
-            columns: ["organization_id"]
+            foreignKeyName: "fk_faculty"
+            columns: ["faculty_id"]
             isOneToOne: false
-            referencedRelation: "organizations"
+            referencedRelation: "faculties"
             referencedColumns: ["id"]
           },
         ]

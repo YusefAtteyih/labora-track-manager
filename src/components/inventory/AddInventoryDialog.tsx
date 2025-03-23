@@ -14,7 +14,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import { Facility } from '@/types/facility';
-import { useOrganizationsData } from '@/hooks/useOrganizationsData';
+import { useFacultiesData } from '@/hooks/useFacultiesData';
 
 export interface InventoryFormData {
   id?: string;
@@ -47,7 +47,7 @@ const AddInventoryDialog: React.FC<AddInventoryDialogProps> = ({
   onAddItem,
   onUpdateItem
 }) => {
-  const { data: organizations } = useOrganizationsData();
+  const { data: faculties } = useFacultiesData();
   const [selectedFacultyId, setSelectedFacultyId] = useState<string>('');
   const [filteredFacilities, setFilteredFacilities] = useState<Facility[]>(facilities);
 
@@ -156,9 +156,9 @@ const AddInventoryDialog: React.FC<AddInventoryDialogProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All Faculties</SelectItem>
-                {organizations?.map(org => (
-                  <SelectItem key={org.id} value={org.id}>
-                    {org.name} ({org.faculty})
+                {faculties?.map(faculty => (
+                  <SelectItem key={faculty.id} value={faculty.id}>
+                    {faculty.name} ({faculty.faculty})
                   </SelectItem>
                 ))}
               </SelectContent>

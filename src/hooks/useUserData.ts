@@ -10,8 +10,8 @@ export interface User {
   email: string;
   role: UserRole;
   avatar?: string;
-  organizationId?: string;
-  organization?: {
+  facultyId?: string;
+  faculty?: {
     id: string;
     name: string;
     department: string;
@@ -49,7 +49,7 @@ export const useUserData = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async (): Promise<User[]> => {
-      // Fetch users from the database with their organization details
+      // Fetch users from the database with their faculty details
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select(`
@@ -58,10 +58,10 @@ export const useUserData = () => {
           email,
           role,
           avatar,
-          organization_id,
+          faculty_id,
           status,
           last_active,
-          organizations:organization_id (
+          faculties:faculty_id (
             id,
             name,
             department
@@ -81,11 +81,11 @@ export const useUserData = () => {
         email: user.email,
         role: user.role as UserRole,
         avatar: user.avatar,
-        organizationId: user.organization_id || undefined,
-        organization: user.organizations ? {
-          id: user.organizations.id,
-          name: user.organizations.name,
-          department: user.organizations.department
+        facultyId: user.faculty_id || undefined,
+        faculty: user.faculties ? {
+          id: user.faculties.id,
+          name: user.faculties.name,
+          department: user.faculties.department
         } : undefined,
         status: user.status,
         lastActive: user.last_active

@@ -62,7 +62,7 @@ interface UserFormData {
   name: string;
   email: string;
   role: UserRole;
-  organizationId: string;
+  facultyId: string;
 }
 
 const Users = () => {
@@ -74,7 +74,7 @@ const Users = () => {
     name: '',
     email: '',
     role: 'facility_member',
-    organizationId: ''
+    facultyId: ''
   });
 
   // Use the useUserData hook to get real-time user data
@@ -124,11 +124,11 @@ const Users = () => {
       }
 
       // The database trigger will create the user record,
-      // but we'll update it with the organization id separately
-      if (formData.organizationId) {
+      // but we'll update it with the faculty id separately
+      if (formData.facultyId) {
         const { error: updateError } = await supabase
           .from('users')
-          .update({ organization_id: formData.organizationId })
+          .update({ faculty_id: formData.facultyId })
           .eq('id', authData.user.id);
 
         if (updateError) {
@@ -146,7 +146,7 @@ const Users = () => {
         name: '',
         email: '',
         role: 'facility_member',
-        organizationId: ''
+        facultyId: ''
       });
     } catch (error) {
       console.error('Error creating user:', error);
@@ -282,24 +282,24 @@ const Users = () => {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="organization">Organization</Label>
+                  <Label htmlFor="faculty">Faculty</Label>
                   <Select 
-                    value={formData.organizationId} 
-                    onValueChange={(value) => handleSelectChange('organizationId', value)}
+                    value={formData.facultyId} 
+                    onValueChange={(value) => handleSelectChange('facultyId', value)}
                   >
-                    <SelectTrigger id="organization">
-                      <SelectValue placeholder="Select organization" />
+                    <SelectTrigger id="faculty">
+                      <SelectValue placeholder="Select faculty" />
                     </SelectTrigger>
                     <SelectContent>
-                      {/* We'll fetch organizations from Supabase in the future */}
-                      <SelectItem value="">No Organization</SelectItem>
+                      {/* We'll fetch faculties from Supabase in the future */}
+                      <SelectItem value="">No Faculty</SelectItem>
                       <SelectItem value="1">Science Department</SelectItem>
                       <SelectItem value="2">Engineering Department</SelectItem>
                       <SelectItem value="3">Medical Department</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Leave empty for visitors with no organization affiliation
+                    Leave empty for visitors with no faculty affiliation
                   </p>
                 </div>
               </div>
@@ -391,7 +391,7 @@ const Users = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {user.organization?.name || '-'}
+                          {user.faculty?.name || '-'}
                         </TableCell>
                         <TableCell>
                           <Badge className={user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
@@ -467,8 +467,8 @@ const Users = () => {
                         </Badge>
                         
                         <div className="w-full flex justify-between text-sm text-muted-foreground">
-                          <span>Organization:</span>
-                          <span className="font-medium">{user.organization?.name || '-'}</span>
+                          <span>Faculty:</span>
+                          <span className="font-medium">{user.faculty?.name || '-'}</span>
                         </div>
                         <div className="w-full flex justify-between text-sm text-muted-foreground">
                           <span>Status:</span>
