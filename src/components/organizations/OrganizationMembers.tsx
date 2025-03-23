@@ -2,7 +2,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/hooks/useUserData';
+import { User, UserRole } from '@/hooks/useUserData';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar } from '@/components/ui/avatar';
@@ -35,7 +35,7 @@ const OrganizationMembers = ({ organizationId, organizationName, isOpen, onClose
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role as UserRole,
         avatar: user.avatar
       }));
     },
