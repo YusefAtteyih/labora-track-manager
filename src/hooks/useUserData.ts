@@ -16,6 +16,8 @@ export interface User {
     name: string;
     department: string;
   };
+  status?: string;
+  lastActive?: string;
 }
 
 export const useUserData = () => {
@@ -57,6 +59,8 @@ export const useUserData = () => {
           role,
           avatar,
           organization_id,
+          status,
+          last_active,
           organizations:organization_id (
             id,
             name,
@@ -82,7 +86,9 @@ export const useUserData = () => {
           id: user.organizations.id,
           name: user.organizations.name,
           department: user.organizations.department
-        } : undefined
+        } : undefined,
+        status: user.status,
+        lastActive: user.last_active
       }));
     }
   });

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -11,7 +10,7 @@ import {
   MoreHorizontal,
   Shield,
   Building,
-  User
+  UserIcon // Renamed from User to UserIcon to avoid collision
 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -188,11 +187,11 @@ const Users = () => {
       case 'lab_supervisor':
         return <Shield className="h-3.5 w-3.5 mr-1.5" />;
       case 'facility_member':
-        return <User className="h-3.5 w-3.5 mr-1.5" />;
+        return <UserIcon className="h-3.5 w-3.5 mr-1.5" />; // Updated to UserIcon
       case 'student':
       case 'visitor':
       default:
-        return <User className="h-3.5 w-3.5 mr-1.5" />;
+        return <UserIcon className="h-3.5 w-3.5 mr-1.5" />; // Updated to UserIcon
     }
   };
 
