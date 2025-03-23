@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -56,6 +57,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth, UserRole } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserData, User } from '@/hooks/useUserData';
+import { useFacultiesData } from '@/hooks/useFacultiesData';
 
 // User form data type
 interface UserFormData {
@@ -79,6 +81,9 @@ const Users = () => {
 
   // Use the useUserData hook to get real-time user data
   const { data: users, isLoading } = useUserData();
+  
+  // Fetch faculties data for the select dropdown
+  const { data: faculties } = useFacultiesData();
 
   // Filter users based on search and role
   const filteredUsers = users?.filter(u => {
@@ -291,11 +296,12 @@ const Users = () => {
                       <SelectValue placeholder="Select faculty" />
                     </SelectTrigger>
                     <SelectContent>
-                      {/* We'll fetch faculties from Supabase in the future */}
                       <SelectItem value="">No Faculty</SelectItem>
-                      <SelectItem value="1">Science Department</SelectItem>
-                      <SelectItem value="2">Engineering Department</SelectItem>
-                      <SelectItem value="3">Medical Department</SelectItem>
+                      {faculties?.map(faculty => (
+                        <SelectItem key={faculty.id} value={faculty.id}>
+                          {faculty.name} ({faculty.department})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
