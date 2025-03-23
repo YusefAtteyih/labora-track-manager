@@ -18,7 +18,7 @@ const NewFacility = () => {
     <MainLayout>
       <div className="space-y-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Add New Facility</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Add New Lab</h2>
           <p className="text-muted-foreground">
             Create a new laboratory, equipment, or classroom facility
           </p>

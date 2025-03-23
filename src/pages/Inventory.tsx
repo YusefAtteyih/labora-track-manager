@@ -63,8 +63,8 @@ const Inventory = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Check if user has admin privileges (org_admin or lab_supervisor)
-  const hasAdminPrivileges = user?.role === 'org_admin' || user?.role === 'lab_supervisor';
+  // Check if user has admin privileges (only org_admin can manage inventory now)
+  const hasAdminPrivileges = user?.role === 'org_admin';
   
   // Filter inventory based on selected filters
   const filteredInventory = inventoryItems?.filter((item) => {
@@ -100,8 +100,8 @@ const Inventory = () => {
       // Validate that a facility is selected
       if (!formData.facilityId) {
         toast({
-          title: "Facility Required",
-          description: "Please select a facility for this inventory item",
+          title: "Lab Required",
+          description: "Please select a lab for this inventory item",
           variant: "destructive",
         });
         return;
@@ -150,8 +150,8 @@ const Inventory = () => {
       // Validate that a facility is selected
       if (!formData.facilityId) {
         toast({
-          title: "Facility Required",
-          description: "Please select a facility for this inventory item",
+          title: "Lab Required",
+          description: "Please select a lab for this inventory item",
           variant: "destructive",
         });
         return;
@@ -303,10 +303,10 @@ const Inventory = () => {
           >
             <SelectTrigger id="facility-filter" className="w-full">
               <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by facility" />
+              <SelectValue placeholder="Filter by lab" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Facilities</SelectItem>
+              <SelectItem value="all">All Labs</SelectItem>
               {filteredFacilities?.map(facility => (
                 <SelectItem key={facility.id} value={facility.id}>
                   {facility.name}
@@ -359,7 +359,7 @@ const Inventory = () => {
                 <TableRow>
                   <TableHead>Item Name</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Facility</TableHead>
+                  <TableHead>Lab</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead className="text-right">Quantity</TableHead>
                   <TableHead>Status</TableHead>
@@ -450,7 +450,7 @@ const Inventory = () => {
       </div>
 
       {/* Add/Edit Inventory Dialog */}
-      {facilities && (
+      {facilities && hasAdminPrivileges && (
         <AddInventoryDialog
           isOpen={isDialogOpen}
           onClose={() => {

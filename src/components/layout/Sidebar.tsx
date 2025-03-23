@@ -50,10 +50,10 @@ const navItems: NavItem[] = [
     title: 'Inventory',
     href: '/inventory',
     icon: BoxesIcon,
-    roles: ['org_admin', 'lab_supervisor', 'facility_member'],
+    roles: ['org_admin'],
   },
   {
-    title: 'Facilities',
+    title: 'Labs',
     href: '/facilities',
     icon: Microscope,
   },

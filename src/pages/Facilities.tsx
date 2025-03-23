@@ -42,7 +42,7 @@ const Facilities = () => {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Facilities</h2>
+            <h2 className="text-3xl font-bold tracking-tight">Labs</h2>
             <p className="text-muted-foreground">
               Browse and book laboratory facilities
             </p>
@@ -50,7 +50,7 @@ const Facilities = () => {
           {isAdmin && (
             <Button className="sm:w-auto" onClick={handleAddFacility}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Facility
+              Add Lab
             </Button>
           )}
         </div>
@@ -60,7 +60,7 @@ const Facilities = () => {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search facilities..."
+              placeholder="Search labs..."
               className="pl-8 w-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -74,7 +74,7 @@ const Facilities = () => {
 
         <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
           <TabsList className="mb-4">
-            <TabsTrigger value="all">All Facilities</TabsTrigger>
+            <TabsTrigger value="all">All Labs</TabsTrigger>
             <TabsTrigger value="lab">Laboratories</TabsTrigger>
             <TabsTrigger value="equipment">Equipment</TabsTrigger>
           </TabsList>
@@ -82,11 +82,11 @@ const Facilities = () => {
           <TabsContent value="all" className="mt-0">
             {isLoading ? (
               <div className="text-center py-10">
-                <p className="text-muted-foreground">Loading facilities...</p>
+                <p className="text-muted-foreground">Loading labs...</p>
               </div>
             ) : error ? (
               <div className="text-center py-10">
-                <p className="text-destructive">Error loading facilities</p>
+                <p className="text-destructive">Error loading labs</p>
               </div>
             ) : filteredFacilities && filteredFacilities.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -96,7 +96,7 @@ const Facilities = () => {
               </div>
             ) : (
               <div className="text-center py-10">
-                <p className="text-muted-foreground">No facilities found</p>
+                <p className="text-muted-foreground">No labs found</p>
               </div>
             )}
           </TabsContent>
