@@ -116,6 +116,42 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          location: string
+          name: string
+          quantity: number
+          status: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          location: string
+          name: string
+          quantity?: number
+          status: string
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          location?: string
+          name?: string
+          quantity?: number
+          status?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           created_at: string | null

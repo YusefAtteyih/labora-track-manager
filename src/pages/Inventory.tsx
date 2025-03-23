@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   BoxesIcon,
@@ -41,82 +42,8 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
-
-// Mock inventory data
-const MOCK_INVENTORY = [
-  {
-    id: 'inv-001',
-    name: 'Microscope Slides',
-    category: 'Glassware',
-    location: 'Storage Room B2',
-    quantity: 145,
-    unit: 'box',
-    status: 'In Stock',
-  },
-  {
-    id: 'inv-002',
-    name: 'Ethanol (95%)',
-    category: 'Chemicals',
-    location: 'Chemical Storage A1',
-    quantity: 12,
-    unit: 'L',
-    status: 'In Stock',
-  },
-  {
-    id: 'inv-003',
-    name: 'Micropipette Set',
-    category: 'Equipment',
-    location: 'Lab 101',
-    quantity: 8,
-    unit: 'set',
-    status: 'In Stock',
-  },
-  {
-    id: 'inv-004',
-    name: 'Nitrile Gloves (M)',
-    category: 'Safety',
-    location: 'Supply Closet',
-    quantity: 5,
-    unit: 'box',
-    status: 'Low Stock',
-  },
-  {
-    id: 'inv-005',
-    name: 'Bunsen Burner',
-    category: 'Equipment',
-    location: 'Lab 102',
-    quantity: 15,
-    unit: 'unit',
-    status: 'In Stock',
-  },
-  {
-    id: 'inv-006',
-    name: 'Petri Dishes',
-    category: 'Glassware',
-    location: 'Storage Room B2',
-    quantity: 210,
-    unit: 'pc',
-    status: 'In Stock',
-  },
-  {
-    id: 'inv-007',
-    name: 'Hydrochloric Acid (1M)',
-    category: 'Chemicals',
-    location: 'Chemical Storage A1',
-    quantity: 0,
-    unit: 'L',
-    status: 'Out of Stock',
-  },
-  {
-    id: 'inv-008',
-    name: 'Safety Goggles',
-    category: 'Safety',
-    location: 'Supply Closet',
-    quantity: 22,
-    unit: 'pc',
-    status: 'In Stock',
-  },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { useInventoryData, InventoryItem } from '@/hooks/useInventoryData';
 
 // Item form type
 interface ItemFormData {
@@ -130,7 +57,7 @@ interface ItemFormData {
 
 const Inventory = () => {
   const { user } = useAuth();
-  const [inventory, setInventory] = useState(MOCK_INVENTORY);
+  const { data: inventoryItems, isLoading } = useInventoryData();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -148,14 +75,14 @@ const Inventory = () => {
   const hasAdminPrivileges = user?.role === 'org_admin' || user?.role === 'lab_supervisor';
   
   // Filter inventory
-  const filteredInventory = inventory.filter((item) => {
+  const filteredInventory = inventoryItems?.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           item.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     
     return matchesSearch && matchesCategory && matchesStatus;
-  });
+  }) || [];
 
   const resetForm = () => {
     setFormData({
@@ -183,47 +110,83 @@ const Inventory = () => {
     });
   };
 
-  const handleAddItem = () => {
-    const newItem = {
-      id: `inv-${Math.floor(Math.random() * 1000)}`,
-      ...formData,
-      status: formData.quantity === 0 ? 'Out of Stock' :
-             formData.quantity < 10 ? 'Low Stock' : 'In Stock',
-    };
-    
-    setInventory([newItem, ...inventory]);
-    toast({
-      title: "Item added",
-      description: `${newItem.name} has been added to inventory`,
-    });
-    
-    setIsDialogOpen(false);
-    resetForm();
+  const handleAddItem = async () => {
+    try {
+      const status = formData.quantity === 0 ? 'Out of Stock' :
+                     formData.quantity < 10 ? 'Low Stock' : 'In Stock';
+
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .insert({
+          name: formData.name,
+          category: formData.category,
+          location: formData.location,
+          quantity: formData.quantity,
+          unit: formData.unit,
+          status: status
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Item added",
+        description: `${formData.name} has been added to inventory`,
+      });
+      
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add inventory item. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUpdateItem = () => {
+  const handleUpdateItem = async () => {
     if (!formData.id) return;
     
-    const updatedInventory = inventory.map(item => 
-      item.id === formData.id ? {
-        ...item,
-        ...formData,
-        status: formData.quantity === 0 ? 'Out of Stock' :
-               formData.quantity < 10 ? 'Low Stock' : 'In Stock',
-      } : item
-    );
-    
-    setInventory(updatedInventory);
-    toast({
-      title: "Item updated",
-      description: `${formData.name} has been updated`,
-    });
-    
-    setIsDialogOpen(false);
-    resetForm();
+    try {
+      const status = formData.quantity === 0 ? 'Out of Stock' :
+                     formData.quantity < 10 ? 'Low Stock' : 'In Stock';
+
+      const { error } = await supabase
+        .from('inventory_items')
+        .update({
+          name: formData.name,
+          category: formData.category,
+          location: formData.location,
+          quantity: formData.quantity,
+          unit: formData.unit,
+          status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', formData.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Item updated",
+        description: `${formData.name} has been updated`,
+      });
+      
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update inventory item. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleEditItem = (item: typeof MOCK_INVENTORY[0]) => {
+  const handleEditItem = (item: InventoryItem) => {
     setFormData({
       id: item.id,
       name: item.name,
@@ -236,17 +199,27 @@ const Inventory = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDeleteItem = (id: string) => {
-    const itemToDelete = inventory.find(item => item.id === id);
-    if (!itemToDelete) return;
-    
-    const updatedInventory = inventory.filter(item => item.id !== id);
-    setInventory(updatedInventory);
-    
-    toast({
-      title: "Item deleted",
-      description: `${itemToDelete.name} has been removed from inventory`,
-    });
+  const handleDeleteItem = async (id: string, itemName: string) => {
+    try {
+      const { error } = await supabase
+        .from('inventory_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Item deleted",
+        description: `${itemName} has been removed from inventory`,
+      });
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete inventory item. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -409,6 +382,7 @@ const Inventory = () => {
               <SelectItem value="Glassware">Glassware</SelectItem>
               <SelectItem value="Safety">Safety</SelectItem>
               <SelectItem value="Tools">Tools</SelectItem>
+              <SelectItem value="Other">Other</SelectItem>
             </SelectContent>
           </Select>
           
@@ -446,7 +420,13 @@ const Inventory = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInventory.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={hasAdminPrivileges ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                      Loading inventory items...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredInventory.length === 0 ? (
                   <TableRow>
                     <TableCell 
                       colSpan={hasAdminPrivileges ? 6 : 5} 
@@ -501,7 +481,7 @@ const Inventory = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDeleteItem(item.id)}
+                              onClick={() => handleDeleteItem(item.id, item.name)}
                             >
                               <Trash className="h-4 w-4" />
                             </Button>
