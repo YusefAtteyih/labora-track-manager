@@ -18,13 +18,13 @@ const NewLab = () => {
     <MainLayout>
       <div className="space-y-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Add New Lab</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Add New Laboratory</h2>
           <p className="text-muted-foreground">
-            Create a new laboratory or experimental facility
+            Create a new research, teaching, or specialized laboratory
           </p>
         </div>
         
-        <AddFacilityForm defaultType="lab" returnPath="/labs" />
+        <AddFacilityForm defaultType="research" returnPath="/labs" />
       </div>
     </MainLayout>
   );

@@ -15,11 +15,11 @@ import { toast } from '@/hooks/use-toast';
 import { Facility } from '@/types/facility';
 import { useQueryClient } from '@tanstack/react-query';
 
-// Schema for facility form validation
-const facilityFormSchema = z.object({
-  name: z.string().min(3, { message: 'Facility name must be at least 3 characters' }),
-  type: z.enum(['lab', 'equipment'], { 
-    required_error: 'Please select a facility type',
+// Schema for lab form validation
+const labFormSchema = z.object({
+  name: z.string().min(3, { message: 'Lab name must be at least 3 characters' }),
+  type: z.enum(['research', 'teaching', 'specialized'], { 
+    required_error: 'Please select a lab type',
   }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters' }),
   location: z.string().min(3, { message: 'Location must be at least 3 characters' }),
@@ -35,19 +35,19 @@ const facilityFormSchema = z.object({
   availableFor: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof facilityFormSchema>;
+type FormValues = z.infer<typeof labFormSchema>;
 
 interface AddFacilityFormProps {
-  defaultType?: 'lab' | 'equipment';
+  defaultType?: 'research' | 'teaching' | 'specialized';
   returnPath?: string;
 }
 
-const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: AddFacilityFormProps) => {
+const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: AddFacilityFormProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
   const form = useForm<FormValues>({
-    resolver: zodResolver(facilityFormSchema),
+    resolver: zodResolver(labFormSchema),
     defaultValues: {
       name: '',
       type: defaultType,
@@ -58,7 +58,7 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
       openHours: '9:00 AM - 5:00 PM',
       department: '',
       features: '',
-      image: 'https://via.placeholder.com/400x200?text=Facility+Image',
+      image: 'https://via.placeholder.com/400x200?text=Lab+Image',
       requiresApproval: false,
       availableFor: 'students,staff',
     },
@@ -79,7 +79,7 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
         : ['students', 'staff'];
 
       // Prepare data for Supabase
-      const facilityData = {
+      const labData = {
         name: data.name,
         type: data.type,
         description: data.description,
@@ -89,15 +89,15 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
         open_hours: data.openHours,
         department: data.department,
         features: featuresArray,
-        image: data.image || 'https://via.placeholder.com/400x200?text=Facility+Image',
+        image: data.image || 'https://via.placeholder.com/400x200?text=Lab+Image',
         requires_approval: data.requiresApproval,
         available_for: availableForArray,
       };
 
-      // Insert the new facility
-      const { data: newFacility, error } = await supabase
+      // Insert the new lab
+      const { data: newLab, error } = await supabase
         .from('facilities')
-        .insert(facilityData)
+        .insert(labData)
         .select()
         .single();
 
@@ -110,16 +110,16 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
 
       toast({
         title: 'Success!',
-        description: 'Facility has been added successfully.',
+        description: 'Lab has been added successfully.',
       });
 
-      // Navigate back to facilities list
+      // Navigate back to labs list
       navigate(returnPath);
     } catch (error) {
-      console.error('Error adding facility:', error);
+      console.error('Error adding lab:', error);
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to add facility',
+        description: error instanceof Error ? error.message : 'Failed to add lab',
         variant: 'destructive',
       });
     }
@@ -128,8 +128,8 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Add New Facility</CardTitle>
-        <CardDescription>Enter the details for the new facility</CardDescription>
+        <CardTitle>Add New Laboratory</CardTitle>
+        <CardDescription>Enter the details for the new laboratory</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -140,7 +140,7 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Facility Name*</FormLabel>
+                    <FormLabel>Lab Name*</FormLabel>
                     <FormControl>
                       <Input placeholder="Chemistry Lab 101" {...field} />
                     </FormControl>
@@ -154,14 +154,15 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Facility Type*</FormLabel>
+                    <FormLabel>Lab Type*</FormLabel>
                     <FormControl>
                       <select
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         {...field}
                       >
-                        <option value="lab">Laboratory</option>
-                        <option value="equipment">Equipment</option>
+                        <option value="research">Research Laboratory</option>
+                        <option value="teaching">Teaching Laboratory</option>
+                        <option value="specialized">Specialized Laboratory</option>
                       </select>
                     </FormControl>
                     <FormMessage />
@@ -256,7 +257,7 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
                       <Input placeholder="https://example.com/image.jpg" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Enter a URL for the facility image. If left empty, a placeholder will be used.
+                      Enter a URL for the lab image. If left empty, a placeholder will be used.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -270,7 +271,7 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
                   <FormItem>
                     <FormLabel>Features</FormLabel>
                     <FormControl>
-                      <Input placeholder="Computer, Projector, Whiteboard" {...field} />
+                      <Input placeholder="Microscopes, Spectrometer, Fume Hood" {...field} />
                     </FormControl>
                     <FormDescription>
                       Enter features separated by commas
@@ -287,10 +288,10 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
                   <FormItem>
                     <FormLabel>Available For</FormLabel>
                     <FormControl>
-                      <Input placeholder="students, staff, visitors" {...field} />
+                      <Input placeholder="students, staff, researchers" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Enter user types separated by commas (students, staff, visitors)
+                      Enter user types separated by commas (students, staff, researchers)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -313,7 +314,7 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
                     <div className="space-y-1 leading-none">
                       <FormLabel>Requires Approval</FormLabel>
                       <FormDescription>
-                        Check if this facility requires admin approval for booking
+                        Check if this lab requires admin approval for booking
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -329,7 +330,7 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
                   <FormLabel>Description*</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Enter a detailed description of the facility"
+                      placeholder="Enter a detailed description of the laboratory"
                       className="min-h-[120px]" 
                       {...field} 
                     />
@@ -343,7 +344,7 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate('/facilities')}
+                onClick={() => navigate('/labs')}
               >
                 Cancel
               </Button>
@@ -356,7 +357,7 @@ const AddFacilityForm = ({ defaultType = 'lab', returnPath = '/facilities' }: Ad
                 ) : (
                   <>
                     <CheckIcon className="mr-2 h-4 w-4" />
-                    Add Facility
+                    Add Laboratory
                   </>
                 )}
               </Button>

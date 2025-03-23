@@ -20,7 +20,7 @@ const NewFacility = () => {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Add New Facility</h2>
           <p className="text-muted-foreground">
-            Create a new laboratory, equipment, or classroom facility
+            Create a new research, teaching, or specialized laboratory
           </p>
         </div>
         
