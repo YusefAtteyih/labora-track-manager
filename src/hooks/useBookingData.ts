@@ -53,6 +53,33 @@ export const useBookingData = () => {
             throw new Error(facilityError.message);
           }
 
+          // Ensure the status is of the correct type
+          const validStatus = (booking.status as string).toLowerCase();
+          let typedStatus: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
+          
+          // Map the status from the database to our expected type
+          switch (validStatus) {
+            case 'pending':
+              typedStatus = 'pending';
+              break;
+            case 'approved':
+              typedStatus = 'approved';
+              break;
+            case 'rejected':
+              typedStatus = 'rejected';
+              break;
+            case 'completed':
+              typedStatus = 'completed';
+              break;
+            case 'cancelled':
+              typedStatus = 'cancelled';
+              break;
+            default:
+              // Default to pending if an unexpected status is received
+              console.warn(`Unexpected booking status: ${booking.status}, defaulting to 'pending'`);
+              typedStatus = 'pending';
+          }
+
           return {
             id: booking.id,
             facility: {
@@ -69,7 +96,7 @@ export const useBookingData = () => {
             },
             startDate: booking.start_date,
             endDate: booking.end_date,
-            status: booking.status,
+            status: typedStatus,
             purpose: booking.purpose,
             attendees: booking.attendees,
             notes: booking.notes
