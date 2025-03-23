@@ -55,74 +55,8 @@ import {
 } from '@/components/ui/table';
 import { toast } from "@/hooks/use-toast";
 import { useAuth, UserRole } from '@/context/AuthContext';
-
-// Mock users data
-const mockUsers = [
-  {
-    id: '1',
-    name: 'Organization Admin',
-    email: 'org_admin@university.edu',
-    role: 'org_admin',
-    avatar: 'https://ui-avatars.com/api/?name=Org+Admin&background=0284c7&color=fff',
-    organizationId: '1',
-    organizationName: 'Science Department',
-    status: 'active',
-    lastActive: '2023-06-15T14:30:00'
-  },
-  {
-    id: '2',
-    name: 'Lab Supervisor',
-    email: 'lab_supervisor@university.edu',
-    role: 'lab_supervisor',
-    avatar: 'https://ui-avatars.com/api/?name=Lab+Supervisor&background=0ea5e9&color=fff',
-    organizationId: '1',
-    organizationName: 'Science Department',
-    status: 'active',
-    lastActive: '2023-06-15T10:15:00'
-  },
-  {
-    id: '3',
-    name: 'Facility Member',
-    email: 'facility_member@university.edu',
-    role: 'facility_member',
-    avatar: 'https://ui-avatars.com/api/?name=Facility+Member&background=38bdf8&color=fff',
-    organizationId: '1',
-    organizationName: 'Science Department',
-    status: 'active',
-    lastActive: '2023-06-14T16:45:00'
-  },
-  {
-    id: '4',
-    name: 'Another Lab Supervisor',
-    email: 'lab_super2@university.edu',
-    role: 'lab_supervisor',
-    avatar: 'https://ui-avatars.com/api/?name=Another+Lab+Supervisor&background=0ea5e9&color=fff',
-    organizationId: '2',
-    organizationName: 'Engineering Department',
-    status: 'active',
-    lastActive: '2023-06-13T11:20:00'
-  },
-  {
-    id: '5',
-    name: 'Student User',
-    email: 'student@university.edu',
-    role: 'student',
-    avatar: 'https://ui-avatars.com/api/?name=Student+User&background=7dd3fc&color=fff',
-    organizationId: '2',
-    organizationName: 'Engineering Department',
-    status: 'active',
-    lastActive: '2023-06-12T09:30:00'
-  },
-  {
-    id: '6',
-    name: 'Visitor User',
-    email: 'visitor@example.com',
-    role: 'visitor',
-    avatar: 'https://ui-avatars.com/api/?name=Visitor+User&background=bae6fd&color=fff',
-    status: 'inactive',
-    lastActive: '2023-06-01T14:00:00'
-  }
-];
+import { supabase } from '@/integrations/supabase/client';
+import { useUserData, User } from '@/hooks/useUserData';
 
 // User form data type
 interface UserFormData {
@@ -141,17 +75,11 @@ const Users = () => {
     name: '',
     email: '',
     role: 'facility_member',
-    organizationId: '1'
+    organizationId: ''
   });
 
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      return mockUsers;
-    }
-  });
+  // Use the useUserData hook to get real-time user data
+  const { data: users, isLoading } = useUserData();
 
   // Filter users based on search and role
   const filteredUsers = users?.filter(u => {
@@ -179,18 +107,78 @@ const Users = () => {
     });
   };
 
-  const handleAddUser = () => {
-    toast({
-      title: "User added",
-      description: `${formData.name} has been added with role ${formData.role.replace('_', ' ')}`,
-    });
-    setIsDialogOpen(false);
-    setFormData({
-      name: '',
-      email: '',
-      role: 'facility_member',
-      organizationId: '1'
-    });
+  const handleAddUser = async () => {
+    try {
+      // First, create the auth user with Supabase
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: formData.email,
+        password: 'temppassword123', // You'd want to generate this or have a better system
+        email_confirm: true,
+        user_metadata: {
+          name: formData.name,
+          role: formData.role
+        }
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      // The database trigger will create the user record,
+      // but we'll update it with the organization id separately
+      if (formData.organizationId) {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ organization_id: formData.organizationId })
+          .eq('id', authData.user.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+      }
+
+      toast({
+        title: "User added",
+        description: `${formData.name} has been added with role ${formData.role.replace('_', ' ')}`,
+      });
+      
+      setIsDialogOpen(false);
+      setFormData({
+        name: '',
+        email: '',
+        role: 'facility_member',
+        organizationId: ''
+      });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "User deleted",
+        description: `${userName} has been removed from the system`,
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getRoleIcon = (role: string) => {
@@ -279,7 +267,7 @@ const Users = () => {
                   <Label htmlFor="role">Role</Label>
                   <Select 
                     value={formData.role} 
-                    onValueChange={(value) => handleSelectChange('role', value)}
+                    onValueChange={(value) => handleSelectChange('role', value as UserRole)}
                   >
                     <SelectTrigger id="role">
                       <SelectValue placeholder="Select role" />
@@ -304,6 +292,8 @@ const Users = () => {
                       <SelectValue placeholder="Select organization" />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* We'll fetch organizations from Supabase in the future */}
+                      <SelectItem value="">No Organization</SelectItem>
                       <SelectItem value="1">Science Department</SelectItem>
                       <SelectItem value="2">Engineering Department</SelectItem>
                       <SelectItem value="3">Medical Department</SelectItem>
@@ -386,7 +376,7 @@ const Users = () => {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-8 w-8">
-                              <AvatarImage src={user.avatar} />
+                              <AvatarImage src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=38bdf8&color=fff`} />
                               <AvatarFallback>
                                 {user.name.substring(0, 2).toUpperCase()}
                               </AvatarFallback>
@@ -402,15 +392,15 @@ const Users = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {user.organizationName || '-'}
+                          {user.organization?.name || '-'}
                         </TableCell>
                         <TableCell>
                           <Badge className={user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                            {user.status}
+                            {user.status || 'active'}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {new Date(user.lastActive).toLocaleDateString()}
+                          {user.lastActive ? new Date(user.lastActive).toLocaleDateString() : '-'}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -431,7 +421,10 @@ const Users = () => {
                                 Change Role
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem 
+                                className="text-red-600"
+                                onClick={() => handleDeleteUser(user.id, user.name)}
+                              >
                                 <Trash className="h-4 w-4 mr-2" />
                                 Delete
                               </DropdownMenuItem>
@@ -462,7 +455,7 @@ const Users = () => {
                     <CardContent className="p-4">
                       <div className="flex flex-col items-center text-center">
                         <Avatar className="h-20 w-20 mb-3">
-                          <AvatarImage src={user.avatar} />
+                          <AvatarImage src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=38bdf8&color=fff`} />
                           <AvatarFallback className="text-xl">
                             {user.name.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
@@ -476,12 +469,12 @@ const Users = () => {
                         
                         <div className="w-full flex justify-between text-sm text-muted-foreground">
                           <span>Organization:</span>
-                          <span className="font-medium">{user.organizationName || '-'}</span>
+                          <span className="font-medium">{user.organization?.name || '-'}</span>
                         </div>
                         <div className="w-full flex justify-between text-sm text-muted-foreground">
                           <span>Status:</span>
                           <span className={`font-medium ${user.status === 'active' ? 'text-green-600' : 'text-gray-500'}`}>
-                            {user.status}
+                            {user.status || 'active'}
                           </span>
                         </div>
                         
@@ -489,7 +482,12 @@ const Users = () => {
                           <Button variant="outline" size="sm" className="h-8 w-8 p-0">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="outline" size="sm" className="h-8 w-8 p-0 text-red-500">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-red-500"
+                            onClick={() => handleDeleteUser(user.id, user.name)}
+                          >
                             <Trash className="h-4 w-4" />
                           </Button>
                         </div>
