@@ -44,26 +44,26 @@ export const useInventoryData = () => {
         throw new Error(inventoryError.message);
       }
 
-      // Then fetch all facilities with their faculty information
-      const { data: facilitiesData, error: facilitiesError } = await supabase
-        .from('facilities')
+      // Then fetch all labs with their faculty information
+      const { data: labsData, error: labsError } = await supabase
+        .from('labs')
         .select('id, name, faculty_id');
       
-      if (facilitiesError) {
-        console.error('Error fetching facilities:', facilitiesError);
-        throw new Error(facilitiesError.message);
+      if (labsError) {
+        console.error('Error fetching labs:', labsError);
+        throw new Error(labsError.message);
       }
 
-      // Create a map of facility IDs to names and faculty IDs for quick lookup
-      const facilityMap = new Map();
-      facilitiesData.forEach(facility => {
-        facilityMap.set(facility.id, {
-          name: facility.name,
-          facultyId: facility.faculty_id
+      // Create a map of labs IDs to names and faculty IDs for quick lookup
+      const labMap = new Map();
+      labsData.forEach(lab => {
+        labMap.set(lab.id, {
+          name: lab.name,
+          facultyId: lab.faculty_id
         });
       });
       
-      // Map inventory items to include facility names and faculty IDs
+      // Map inventory items to include lab names and faculty IDs
       return inventoryData.map(item => ({
         id: item.id,
         name: item.name,
@@ -72,9 +72,18 @@ export const useInventoryData = () => {
         quantity: item.quantity,
         unit: item.unit,
         status: item.status,
-        facilityId: item.facility_id || '',
-        facilityName: item.facility_id ? facilityMap.get(item.facility_id)?.name || 'Unknown Facility' : 'Unassigned',
-        facultyId: item.facility_id ? facilityMap.get(item.facility_id)?.facultyId || null : null,
+        facilityId: item.facility_id || '', // Keep for backwards compatibility
+        labId: item.lab_id || item.facility_id || '', // Try to map old facility_id to lab_id
+        facilityName: item.lab_id 
+          ? labMap.get(item.lab_id)?.name || 'Unknown Lab'
+          : item.facility_id && labMap.get(item.facility_id)?.name 
+            ? labMap.get(item.facility_id)?.name 
+            : 'Unassigned',
+        facultyId: item.lab_id 
+          ? labMap.get(item.lab_id)?.facultyId || null
+          : item.facility_id && labMap.get(item.facility_id)?.facultyId 
+            ? labMap.get(item.facility_id)?.facultyId
+            : null,
         created_at: item.created_at,
         updated_at: item.updated_at
       }));

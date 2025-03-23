@@ -57,7 +57,7 @@ export const useBookingData = (userId?: string) => {
       // Build query based on whether a userId is provided
       let query = supabase
         .from('bookings')
-        .select('*, facility_id')
+        .select('*')
         .order('start_date', { ascending: false });
       
       // If userId is provided, filter by that user
@@ -72,18 +72,82 @@ export const useBookingData = (userId?: string) => {
         throw new Error(bookingsError.message);
       }
 
-      // For each booking, we need to get the facility details
+      // For each booking, we need to get the associated facility (lab or equipment) details
       const bookings: Booking[] = await Promise.all(
         bookingsData.map(async (booking) => {
-          const { data: facilityData, error: facilityError } = await supabase
-            .from('facilities')
-            .select('id, name, location, type')
-            .eq('id', booking.facility_id)
-            .single();
+          let facilityData;
+          let facilityError;
 
-          if (facilityError) {
+          // Check if the booking is for a lab
+          if (booking.lab_id) {
+            const response = await supabase
+              .from('labs')
+              .select('id, name, location')
+              .eq('id', booking.lab_id)
+              .single();
+            
+            facilityData = response.data;
+            facilityError = response.error;
+            
+            if (facilityData) {
+              facilityData.type = 'lab';
+            }
+          }
+          // Check if the booking is for equipment
+          else if (booking.equipment_id) {
+            const response = await supabase
+              .from('equipment')
+              .select('id, name')
+              .eq('id', booking.equipment_id)
+              .single();
+            
+            facilityData = response.data;
+            facilityError = response.error;
+            
+            if (facilityData) {
+              facilityData.type = 'equipment';
+              facilityData.location = 'Equipment';
+            }
+          }
+          // If it's a legacy booking with facility_id, handle that too
+          else if (booking.facility_id) {
+            // Try labs first
+            let response = await supabase
+              .from('labs')
+              .select('id, name, location')
+              .eq('id', booking.facility_id)
+              .single();
+            
+            if (response.data) {
+              facilityData = response.data;
+              facilityData.type = 'lab';
+            } else {
+              // Try equipment if not found in labs
+              response = await supabase
+                .from('equipment')
+                .select('id, name')
+                .eq('id', booking.facility_id)
+                .single();
+              
+              if (response.data) {
+                facilityData = response.data;
+                facilityData.type = 'equipment';
+                facilityData.location = 'Equipment';
+              }
+            }
+            
+            facilityError = response.error;
+          }
+
+          if (facilityError && !facilityData) {
             console.error(`Error fetching facility for booking ${booking.id}:`, facilityError);
-            throw new Error(facilityError.message);
+            // Provide a fallback for missing facility data rather than failing
+            facilityData = {
+              id: booking.facility_id || booking.lab_id || booking.equipment_id || 'unknown',
+              name: 'Unknown Facility',
+              location: 'Unknown Location',
+              type: 'unknown'
+            };
           }
 
           // Ensure the status is of the correct type

@@ -52,17 +52,17 @@ export const useFacultiesData = () => {
       )
       .subscribe();
       
-    const facilityChannel = supabase
-      .channel('facility-changes')
+    const labsChannel = supabase
+      .channel('lab-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'facilities'
+          table: 'labs'
         },
         () => {
-          // Facility table changes can affect organization facility counts
+          // Labs table changes can affect organization facility counts
           queryClient.invalidateQueries({ queryKey: ['faculties'] });
         }
       )
@@ -71,7 +71,7 @@ export const useFacultiesData = () => {
     return () => {
       supabase.removeChannel(orgChannel);
       supabase.removeChannel(userChannel);
-      supabase.removeChannel(facilityChannel);
+      supabase.removeChannel(labsChannel);
     };
   }, [queryClient]);
 
@@ -88,20 +88,20 @@ export const useFacultiesData = () => {
         throw new Error(facultiesError.message);
       }
       
-      // Fetch facilities data to get real counts by department
-      const { data: facilities, error: facilitiesError } = await supabase
-        .from('facilities')
-        .select('department');
+      // Fetch labs data to get counts by faculty
+      const { data: labs, error: labsError } = await supabase
+        .from('labs')
+        .select('faculty_id');
         
-      if (facilitiesError) {
-        console.error('Error fetching facilities for faculties:', facilitiesError);
-        throw new Error(facilitiesError.message);
+      if (labsError) {
+        console.error('Error fetching labs for faculties:', labsError);
+        throw new Error(labsError.message);
       }
       
-      // Count facilities by department
-      const facilitiesByDept = facilities.reduce((acc, facility) => {
-        if (facility.department) {
-          acc[facility.department] = (acc[facility.department] || 0) + 1;
+      // Count labs by faculty_id
+      const labsByFaculty = labs.reduce((acc, lab) => {
+        if (lab.faculty_id) {
+          acc[lab.faculty_id] = (acc[lab.faculty_id] || 0) + 1;
         }
         return acc;
       }, {} as Record<string, number>);
@@ -132,7 +132,7 @@ export const useFacultiesData = () => {
         university: org.university || 'University of Science and Technology',
         faculty: org.faculty || 'Faculty of Science',
         department: org.department,
-        facilities: facilitiesByDept[org.department] || 0,
+        facilities: labsByFaculty[org.id] || 0,
         members: usersByOrg[org.id] || 0,
         equipment: Math.floor(Math.random() * 50) + 10 // Will keep random for equipment until we have equipment table
       }));

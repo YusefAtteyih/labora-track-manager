@@ -7,16 +7,33 @@ import { useEffect } from 'react';
 export const useFacilityData = () => {
   const queryClient = useQueryClient();
 
-  // Set up real-time subscription
+  // Set up real-time subscription for labs
   useEffect(() => {
-    const channel = supabase
-      .channel('facility-changes')
+    const labsChannel = supabase
+      .channel('labs-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'facilities'
+          table: 'labs'
+        },
+        () => {
+          // Invalidate and refetch when data changes
+          queryClient.invalidateQueries({ queryKey: ['facilities'] });
+        }
+      )
+      .subscribe();
+
+    // Set up real-time subscription for equipment
+    const equipmentChannel = supabase
+      .channel('equipment-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'equipment'
         },
         () => {
           // Invalidate and refetch when data changes
@@ -26,42 +43,41 @@ export const useFacilityData = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(labsChannel);
+      supabase.removeChannel(equipmentChannel);
     };
   }, [queryClient]);
 
   return useQuery({
     queryKey: ['facilities'],
     queryFn: async (): Promise<Facility[]> => {
-      const { data, error } = await supabase
-        .from('facilities')
-        .select('*, organizations:faculty_id(id, name)')
+      // Fetch labs
+      const { data: labsData, error: labsError } = await supabase
+        .from('labs')
+        .select('*, faculties:faculty_id(id, name)')
         .order('name');
 
-      if (error) {
-        console.error('Error fetching facilities:', error);
-        throw new Error(error.message);
+      if (labsError) {
+        console.error('Error fetching labs:', labsError);
+        throw new Error(labsError.message);
       }
 
-      // Transform the data to match our Facility type
-      return data.map((facility): Facility => {
-        // Type cast for facility type
-        let typedType: 'lab' | 'equipment';
-        switch (facility.type) {
-          case 'lab':
-            typedType = 'lab';
-            break;
-          case 'equipment':
-            typedType = 'equipment';
-            break;
-          default:
-            console.warn(`Unexpected facility type: ${facility.type}, defaulting to 'lab'`);
-            typedType = 'lab';
-        }
-        
+      // Fetch equipment
+      const { data: equipmentData, error: equipmentError } = await supabase
+        .from('equipment')
+        .select('*')
+        .order('name');
+
+      if (equipmentError) {
+        console.error('Error fetching equipment:', equipmentError);
+        throw new Error(equipmentError.message);
+      }
+
+      // Transform labs data to match Facility type
+      const labs = labsData.map((lab): Facility => {
         // Type cast for facility status
         let typedStatus: 'available' | 'booked' | 'maintenance';
-        switch (facility.status) {
+        switch (lab.status) {
           case 'available':
             typedStatus = 'available';
             break;
@@ -72,14 +88,14 @@ export const useFacilityData = () => {
             typedStatus = 'maintenance';
             break;
           default:
-            console.warn(`Unexpected facility status: ${facility.status}, defaulting to 'available'`);
+            console.warn(`Unexpected lab status: ${lab.status}, defaulting to 'available'`);
             typedStatus = 'available';
         }
 
         // Type cast for availableFor array
         const typedAvailableFor: ('students' | 'staff' | 'visitors')[] = [];
-        if (facility.available_for && Array.isArray(facility.available_for)) {
-          facility.available_for.forEach(item => {
+        if (lab.available_for && Array.isArray(lab.available_for)) {
+          lab.available_for.forEach(item => {
             if (item === 'students' || item === 'staff' || item === 'visitors') {
               typedAvailableFor.push(item);
             } else {
@@ -89,22 +105,62 @@ export const useFacilityData = () => {
         }
 
         return {
-          id: facility.id,
-          name: facility.name,
-          type: typedType,
-          description: facility.description || '',
-          location: facility.location || '',
-          capacity: facility.capacity || 0,
+          id: lab.id,
+          name: lab.name,
+          type: 'lab', // Always lab for labs table
+          description: lab.description || '',
+          location: lab.location || '',
+          capacity: lab.capacity || 0,
           status: typedStatus,
-          image: facility.image || 'https://via.placeholder.com/400x200?text=No+Image',
-          openHours: facility.open_hours || '',
-          department: facility.department || '',
-          features: facility.features || [],
+          image: lab.image || 'https://via.placeholder.com/400x200?text=No+Image',
+          openHours: lab.open_hours || '',
+          department: lab.department || '',
+          features: lab.features || [],
           availableFor: typedAvailableFor,
-          requiresApproval: facility.requires_approval || false,
-          facultyId: facility.faculty_id || null
+          requiresApproval: lab.requires_approval || false,
+          facultyId: lab.faculty_id || null
         };
       });
+
+      // Transform equipment data to match Facility type
+      const equipment = equipmentData.map((equip): Facility => {
+        // Type cast for facility status
+        let typedStatus: 'available' | 'booked' | 'maintenance';
+        switch (equip.status) {
+          case 'available':
+            typedStatus = 'available';
+            break;
+          case 'booked':
+            typedStatus = 'booked';
+            break;
+          case 'maintenance':
+            typedStatus = 'maintenance';
+            break;
+          default:
+            console.warn(`Unexpected equipment status: ${equip.status}, defaulting to 'available'`);
+            typedStatus = 'available';
+        }
+
+        return {
+          id: equip.id,
+          name: equip.name,
+          type: 'equipment', // Always equipment for equipment table
+          description: equip.description || '',
+          location: equip.lab_id ? `Lab equipment - ID: ${equip.lab_id}` : 'General inventory',
+          capacity: equip.quantity || 1,
+          status: typedStatus,
+          image: equip.image || 'https://via.placeholder.com/400x200?text=No+Image',
+          openHours: 'N/A', // Equipment doesn't have open hours
+          department: '', // Equipment doesn't have department directly
+          features: equip.features || [],
+          availableFor: ['students', 'staff'], // Default
+          requiresApproval: true, // Equipment usually requires approval
+          facultyId: null // Equipment doesn't have faculty directly
+        };
+      });
+
+      // Combine both arrays and return
+      return [...labs, ...equipment];
     }
   });
 };

@@ -2,162 +2,190 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface ReportSummaryItem {
-  label: string;
-  value: string;
-  trend: number;
-}
-
-export interface ReportChartDataPoint {
-  name: string;
-  value: number;
-}
-
-export interface MonthlyUsageDataPoint {
-  month: string;
-  laboratories: number;
-  equipment: number;
-  classrooms: number;
-}
-
-export interface BookingStatusDataPoint {
-  status: string;
-  count: number;
-}
-
-export interface InventoryCategoryDataPoint {
+export interface Report {
+  id: string;
+  title: string;
   category: string;
-  inStock: number;
-  lowStock: number;
-  outOfStock: number;
+  createdOn: string;
+  createdBy: {
+    name: string;
+    role: string;
+    avatar: string;
+  };
+  status: 'published' | 'draft' | 'archived';
+  summary: string;
+  views: number;
+  downloads: number;
+}
+
+export interface ReportSummary {
+  reportsCreated: number;
+  totalViews: number;
+  popularCategories: { name: string; count: number }[];
+  recentReports: { id: string; title: string; date: string }[];
 }
 
 export interface ReportsData {
-  usageSummary: ReportSummaryItem[];
-  bookingSummary: ReportSummaryItem[];
-  inventorySummary: ReportSummaryItem[];
-  usageByType: ReportChartDataPoint[];
-  usageOverTime: MonthlyUsageDataPoint[];
-  bookingsByStatus: BookingStatusDataPoint[];
-  inventoryByCategory: InventoryCategoryDataPoint[];
+  reports: Report[];
+  summary: ReportSummary;
 }
 
 export const useReportsData = () => {
   return useQuery({
     queryKey: ['reports'],
     queryFn: async (): Promise<ReportsData> => {
-      // Fetch all the data we need from Supabase to generate reports
-      
-      // 1. Get facility and booking data
-      const { data: facilities, error: facilitiesError } = await supabase
-        .from('facilities')
-        .select('*');
-      
-      if (facilitiesError) {
-        console.error('Error fetching facilities for reports:', facilitiesError);
-        throw new Error(facilitiesError.message);
+      // Fetch labs data for category summary
+      const { data: labsData, error: labsError } = await supabase
+        .from('labs')
+        .select('id, type:department');
+        
+      if (labsError) {
+        console.error('Error fetching labs for reports:', labsError);
+        throw new Error(labsError.message);
       }
       
-      const { data: bookings, error: bookingsError } = await supabase
+      // Fetch equipment data for category summary
+      const { data: equipmentData, error: equipmentError } = await supabase
+        .from('equipment')
+        .select('id, category');
+        
+      if (equipmentError) {
+        console.error('Error fetching equipment for reports:', equipmentError);
+        throw new Error(equipmentError.message);
+      }
+      
+      // Count items by category
+      const categoryCounts: Record<string, number> = {};
+      
+      // Count labs by department
+      labsData.forEach(lab => {
+        const category = lab.type || 'Uncategorized';
+        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+      });
+      
+      // Count equipment by category
+      equipmentData.forEach(equip => {
+        const category = equip.category || 'Uncategorized';
+        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+      });
+      
+      // Sort categories by count and get top ones
+      const popularCategories = Object.entries(categoryCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+        
+      // Fetch booking data for report stats
+      const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
-        .select('*');
-      
-      if (bookingsError) {
-        console.error('Error fetching bookings for reports:', bookingsError);
-        throw new Error(bookingsError.message);
+        .select('id, start_date, purpose')
+        .order('start_date', { ascending: false })
+        .limit(5);
+        
+      if (bookingError) {
+        console.error('Error fetching bookings for reports:', bookingError);
+        throw new Error(bookingError.message);
       }
       
-      // Calculate usage statistics
-      const totalBookings = bookings.length;
-      const totalFacilities = facilities.length;
-      
-      // Calculate unique users
-      const uniqueUsers = new Set(bookings.map(b => b.user_id)).size;
-      
-      // Calculate average booking duration in hours
-      const avgDuration = bookings.length > 0 
-        ? bookings.reduce((sum, booking) => {
-            const start = new Date(booking.start_date);
-            const end = new Date(booking.end_date);
-            const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-            return sum + durationHours;
-          }, 0) / bookings.length
-        : 0;
-      
-      // Calculate utilization rate (bookings / total possible slots)
-      // This is a simplified calculation
-      const utilizationRate = totalFacilities > 0 
-        ? (totalBookings / (totalFacilities * 30)) * 100 // assuming 30 possible booking slots per facility
-        : 0;
-      
-      // Count bookings by status
-      const statusCounts = bookings.reduce((acc, booking) => {
-        acc[booking.status] = (acc[booking.status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      // Count facilities by type
-      const typeCounts = facilities.reduce((acc, facility) => {
-        acc[facility.type] = (acc[facility.type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      // Generate mock trends since we don't have historical data
-      // In a real application, you would compare with previous periods
-      const generateTrend = () => Math.round((Math.random() * 40 - 20) * 10) / 10;
-      
-      // Calculate usage by type percentage
-      const totalByType = Object.values(typeCounts).reduce((a, b) => a + b, 0);
-      const usageByTypePercentage = Object.entries(typeCounts).map(([name, value]) => ({
-        name: name === 'lab' ? 'Laboratories' : name === 'equipment' ? 'Equipment' : 'Classrooms',
-        value: totalByType > 0 ? Math.round((value / totalByType) * 100) : 0
+      // Format recent bookings as reports
+      const recentReports = bookingData.map(booking => ({
+        id: booking.id,
+        title: booking.purpose || 'Untitled Booking',
+        date: new Date(booking.start_date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })
       }));
       
+      // Since we don't have actual report data, we'll generate mock reports
+      const mockReports: Report[] = [
+        {
+          id: '1',
+          title: 'Lab Usage Analysis - Q1 2023',
+          category: 'Lab Usage',
+          createdOn: '2023-03-31',
+          createdBy: {
+            name: 'Dr. Sarah Johnson',
+            role: 'Lab Manager',
+            avatar: 'https://ui-avatars.com/api/?name=Sarah+Johnson&background=0D8ABC&color=fff'
+          },
+          status: 'published',
+          summary: 'Comprehensive analysis of laboratory usage across departments for Q1 2023.',
+          views: 245,
+          downloads: 87
+        },
+        {
+          id: '2',
+          title: 'Equipment Maintenance Schedule',
+          category: 'Maintenance',
+          createdOn: '2023-02-15',
+          createdBy: {
+            name: 'Michael Chen',
+            role: 'Equipment Technician',
+            avatar: 'https://ui-avatars.com/api/?name=Michael+Chen&background=5a67d8&color=fff'
+          },
+          status: 'published',
+          summary: 'Detailed maintenance schedule for all laboratory equipment for the current year.',
+          views: 189,
+          downloads: 56
+        },
+        {
+          id: '3',
+          title: 'Resource Allocation Proposal',
+          category: 'Planning',
+          createdOn: '2023-04-10',
+          createdBy: {
+            name: 'Prof. Robert Wilson',
+            role: 'Department Chair',
+            avatar: 'https://ui-avatars.com/api/?name=Robert+Wilson&background=047857&color=fff'
+          },
+          status: 'draft',
+          summary: 'Proposal for optimizing resource allocation across research labs for the upcoming academic year.',
+          views: 32,
+          downloads: 0
+        },
+        {
+          id: '4',
+          title: 'Safety Compliance Audit',
+          category: 'Safety',
+          createdOn: '2023-03-05',
+          createdBy: {
+            name: 'Emily Rodriguez',
+            role: 'Safety Officer',
+            avatar: 'https://ui-avatars.com/api/?name=Emily+Rodriguez&background=dc2626&color=fff'
+          },
+          status: 'published',
+          summary: 'Results from the annual safety compliance audit for all laboratories.',
+          views: 312,
+          downloads: 145
+        },
+        {
+          id: '5',
+          title: 'Student Access Analysis',
+          category: 'Usage Analytics',
+          createdOn: '2023-04-05',
+          createdBy: {
+            name: 'Dr. James Lee',
+            role: 'Academic Coordinator',
+            avatar: 'https://ui-avatars.com/api/?name=James+Lee&background=7c3aed&color=fff'
+          },
+          status: 'published',
+          summary: 'Analysis of student laboratory access patterns and correlation with academic performance.',
+          views: 187,
+          downloads: 43
+        }
+      ];
+      
       return {
-        usageSummary: [
-          { label: 'Total Bookings', value: totalBookings.toString(), trend: generateTrend() },
-          { label: 'Utilization Rate', value: `${Math.round(utilizationRate)}%`, trend: generateTrend() },
-          { label: 'Avg. Duration', value: `${avgDuration.toFixed(1)}h`, trend: generateTrend() },
-          { label: 'Unique Users', value: uniqueUsers.toString(), trend: generateTrend() },
-        ],
-        bookingSummary: [
-          { label: 'Pending Approvals', value: (statusCounts['pending'] || 0).toString(), trend: generateTrend() },
-          { label: 'Approved Bookings', value: (statusCounts['approved'] || 0).toString(), trend: generateTrend() },
-          { label: 'Rejected Bookings', value: (statusCounts['rejected'] || 0).toString(), trend: generateTrend() },
-          { label: 'Cancelled', value: (statusCounts['cancelled'] || 0).toString(), trend: generateTrend() },
-        ],
-        inventorySummary: [
-          // Still using mock inventory data until we have an inventory table
-          { label: 'Total Items', value: '1,245', trend: generateTrend() },
-          { label: 'Low Stock Items', value: '37', trend: generateTrend() },
-          { label: 'Out of Stock', value: '18', trend: generateTrend() },
-          { label: 'On Order', value: '42', trend: generateTrend() },
-        ],
-        usageByType: usageByTypePercentage,
-        usageOverTime: [
-          // Monthly data would ideally come from historical records
-          // For now we'll use mock data structured by actual facility types
-          { month: 'Jan', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
-          { month: 'Feb', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
-          { month: 'Mar', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
-          { month: 'Apr', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
-          { month: 'May', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
-          { month: 'Jun', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
-        ],
-        bookingsByStatus: Object.entries(statusCounts).map(([status, count]) => ({
-          status: status.charAt(0).toUpperCase() + status.slice(1),
-          count
-        })),
-        inventoryByCategory: [
-          // Mock inventory data until we have an inventory table
-          { category: 'Chemicals', inStock: 240, lowStock: 15, outOfStock: 5 },
-          { category: 'Glassware', inStock: 180, lowStock: 8, outOfStock: 2 },
-          { category: 'Equipment Parts', inStock: 95, lowStock: 12, outOfStock: 8 },
-          { category: 'Safety Supplies', inStock: 120, lowStock: 0, outOfStock: 0 },
-          { category: 'Electronics', inStock: 75, lowStock: 5, outOfStock: 3 },
-        ],
+        reports: mockReports,
+        summary: {
+          reportsCreated: mockReports.length,
+          totalViews: mockReports.reduce((sum, report) => sum + report.views, 0),
+          popularCategories,
+          recentReports
+        }
       };
-    },
-    refetchInterval: 60000, // Refresh data every minute
+    }
   });
 };

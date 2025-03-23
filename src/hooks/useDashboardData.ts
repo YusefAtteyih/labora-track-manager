@@ -1,3 +1,4 @@
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
@@ -79,14 +80,29 @@ export const useDashboardData = () => {
       )
       .subscribe();
 
-    const facilitiesChannel = supabase
-      .channel('dashboard-facility-changes')
+    const labsChannel = supabase
+      .channel('dashboard-labs-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'facilities'
+          table: 'labs'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        }
+      )
+      .subscribe();
+
+    const equipmentChannel = supabase
+      .channel('dashboard-equipment-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'equipment'
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -98,7 +114,8 @@ export const useDashboardData = () => {
     return () => {
       supabase.removeChannel(bookingsChannel);
       supabase.removeChannel(usersChannel);
-      supabase.removeChannel(facilitiesChannel);
+      supabase.removeChannel(labsChannel);
+      supabase.removeChannel(equipmentChannel);
     };
   }, [queryClient]);
 
@@ -150,11 +167,12 @@ export const useDashboardData = () => {
         .from('bookings')
         .select(`
           id,
+          lab_id,
+          equipment_id,
           facility_id,
           user_name,
           start_date,
-          purpose,
-          facilities:facility_id (name)
+          purpose
         `)
         .eq('status', 'pending')
         .order('start_date', { ascending: true })
@@ -171,11 +189,12 @@ export const useDashboardData = () => {
         .from('bookings')
         .select(`
           id,
+          lab_id,
+          equipment_id,
           facility_id,
           start_date,
           end_date,
-          status,
-          facilities:facility_id (name)
+          status
         `)
         .or('status.eq.approved,status.eq.pending')
         .gte('start_date', todayISO)
@@ -186,26 +205,38 @@ export const useDashboardData = () => {
         console.error('Error fetching upcoming bookings:', upcomingBookingsError);
       }
       
-      // 6. Fetch facilities by type for the inventory chart
-      const { data: facilityTypes, error: facilityTypesError } = await supabase
-        .from('facilities')
-        .select('type');
+      // 6. Fetch labs and equipment for inventory stats and chart
+      const { data: labsData, error: labsError } = await supabase
+        .from('labs')
+        .select('id');
         
-      if (facilityTypesError) {
-        console.error('Error fetching facility types:', facilityTypesError);
+      if (labsError) {
+        console.error('Error fetching labs:', labsError);
       }
       
-      // Count facilities by type
-      const typeCounts: Record<string, number> = {};
-      facilityTypes?.forEach(facility => {
-        typeCounts[facility.type] = (typeCounts[facility.type] || 0) + 1;
+      const { data: equipmentData, error: equipmentError } = await supabase
+        .from('equipment')
+        .select('id, category');
+        
+      if (equipmentError) {
+        console.error('Error fetching equipment:', equipmentError);
+      }
+      
+      // Count equipment by category
+      const categoryCounts: Record<string, number> = {};
+      equipmentData?.forEach(equipment => {
+        const category = equipment.category || 'Uncategorized';
+        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
       });
       
-      // Create inventory data from facility types
-      const inventoryData = Object.entries(typeCounts).map(([name, count]) => ({
-        name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize first letter
-        count
-      }));
+      // Create inventory data from equipment categories
+      const inventoryData = [
+        { name: 'Labs', count: labsData?.length || 0 },
+        ...Object.entries(categoryCounts).map(([name, count]) => ({
+          name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize first letter
+          count
+        }))
+      ];
       
       // 7. Create booking data for the week
       const bookingData = [];
@@ -244,7 +275,7 @@ export const useDashboardData = () => {
       }
       
       // Process pending approvals data
-      const formattedPendingApprovals = pendingApprovals?.map(item => {
+      const formattedPendingApprovals = await Promise.all(pendingApprovals?.map(async (item) => {
         const bookingDate = new Date(item.start_date);
         const formattedDate = bookingDate.toLocaleDateString('en-US', { 
           year: 'numeric', 
@@ -256,18 +287,57 @@ export const useDashboardData = () => {
           minute: '2-digit'
         });
         
+        // Get the facility name based on lab_id, equipment_id, or facility_id
+        let facilityName = 'Unknown Facility';
+        
+        if (item.lab_id) {
+          const { data } = await supabase
+            .from('labs')
+            .select('name')
+            .eq('id', item.lab_id)
+            .single();
+          if (data) facilityName = data.name;
+        } else if (item.equipment_id) {
+          const { data } = await supabase
+            .from('equipment')
+            .select('name')
+            .eq('id', item.equipment_id)
+            .single();
+          if (data) facilityName = data.name;
+        } else if (item.facility_id) {
+          // Try labs first
+          const { data: labData } = await supabase
+            .from('labs')
+            .select('name')
+            .eq('id', item.facility_id)
+            .single();
+            
+          if (labData) {
+            facilityName = labData.name;
+          } else {
+            // Try equipment if not in labs
+            const { data: equipData } = await supabase
+              .from('equipment')
+              .select('name')
+              .eq('id', item.facility_id)
+              .single();
+              
+            if (equipData) facilityName = equipData.name;
+          }
+        }
+        
         return {
           id: item.id,
           type: 'Booking',
           user: item.user_name,
-          item: item.facilities?.name || 'Unknown Facility',
+          item: facilityName,
           date: formattedDate,
           time: formattedTime,
         };
-      }) || [];
+      }) || []);
       
       // Process upcoming bookings data
-      const formattedUpcomingBookings = upcomingBookings?.map(booking => {
+      const formattedUpcomingBookings = await Promise.all(upcomingBookings?.map(async (booking) => {
         const startDate = new Date(booking.start_date);
         const endDate = new Date(booking.end_date);
         
@@ -293,14 +363,53 @@ export const useDashboardData = () => {
         // Format the time
         const timeDisplay = `${startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
         
+        // Get the facility name
+        let facilityName = 'Unknown Facility';
+        
+        if (booking.lab_id) {
+          const { data } = await supabase
+            .from('labs')
+            .select('name')
+            .eq('id', booking.lab_id)
+            .single();
+          if (data) facilityName = data.name;
+        } else if (booking.equipment_id) {
+          const { data } = await supabase
+            .from('equipment')
+            .select('name')
+            .eq('id', booking.equipment_id)
+            .single();
+          if (data) facilityName = data.name;
+        } else if (booking.facility_id) {
+          // Try labs first
+          const { data: labData } = await supabase
+            .from('labs')
+            .select('name')
+            .eq('id', booking.facility_id)
+            .single();
+            
+          if (labData) {
+            facilityName = labData.name;
+          } else {
+            // Try equipment if not in labs
+            const { data: equipData } = await supabase
+              .from('equipment')
+              .select('name')
+              .eq('id', booking.facility_id)
+              .single();
+              
+            if (equipData) facilityName = equipData.name;
+          }
+        }
+        
         return {
           id: booking.id,
-          lab: booking.facilities?.name || 'Unknown Facility',
+          lab: facilityName,
           date: dateDisplay,
           time: timeDisplay,
           status: booking.status === 'approved' ? 'confirmed' : 'pending' as 'confirmed' | 'pending',
         };
-      }) || [];
+      }) || []);
       
       // For now, we'll use mock data for low stock items
       // In a real application, you would fetch this from an inventory table
@@ -330,7 +439,7 @@ export const useDashboardData = () => {
       
       return {
         stats: {
-          totalInventory: inventoryData.reduce((sum, item) => sum + item.count, 0),
+          totalInventory: (labsData?.length || 0) + (equipmentData?.length || 0),
           activeBookings: activeBookingsData && activeBookingsData.length > 0 ? parseInt(activeBookingsData[0].count as unknown as string, 10) : 0,
           pendingApprovals: pendingApprovalsCount && pendingApprovalsCount.length > 0 ? parseInt(pendingApprovalsCount[0].count as unknown as string, 10) : 0,
           activeUsers: activeUsersData && activeUsersData.length > 0 ? parseInt(activeUsersData[0].count as unknown as string, 10) : 0,

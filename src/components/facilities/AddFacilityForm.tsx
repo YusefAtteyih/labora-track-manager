@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +11,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckIcon, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Facility } from '@/types/facility';
 import { useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFacultiesData } from '@/hooks/useFacultiesData';
@@ -96,10 +94,9 @@ const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: Add
         ? data.availableFor.split(',').map(item => item.trim()) as ('students' | 'staff' | 'visitors')[]
         : ['students', 'staff'];
 
-      // Prepare data for Supabase
+      // Prepare data for Supabase - change to use labs table
       const labData = {
         name: data.name,
-        type: data.type,
         description: data.description,
         location: data.location,
         capacity: data.capacity,
@@ -113,9 +110,9 @@ const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: Add
         available_for: availableForArray,
       };
 
-      // Insert the new lab
+      // Insert the new lab into the labs table
       const { data: newLab, error } = await supabase
-        .from('facilities')
+        .from('labs')
         .insert(labData)
         .select()
         .single();
@@ -126,6 +123,7 @@ const AddFacilityForm = ({ defaultType = 'research', returnPath = '/labs' }: Add
 
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['facilities'] });
+      queryClient.invalidateQueries({ queryKey: ['labs'] });
 
       toast({
         title: 'Success!',
