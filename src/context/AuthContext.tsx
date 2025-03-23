@@ -55,6 +55,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
+        console.log('Session found, fetching user data');
+        
         const { data: userData, error } = await supabase
           .from('users')
           .select(`
@@ -83,6 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         if (userData) {
+          console.log('User data received:', userData);
+          
           const authUser: User = {
             id: userData.id,
             name: userData.name,
@@ -312,11 +316,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check authentication on component mount
   useEffect(() => {
+    console.log('Auth provider mounted, checking auth');
     checkAuth();
     
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event);
         if (event === 'SIGNED_IN' && session) {
           checkAuth();
         } else if (event === 'SIGNED_OUT') {

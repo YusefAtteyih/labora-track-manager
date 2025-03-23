@@ -49,47 +49,64 @@ export const useUserData = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async (): Promise<User[]> => {
-      // Fetch users from the database with their faculty details
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select(`
-          id,
-          name,
-          email,
-          role,
-          avatar,
-          faculty_id,
-          status,
-          last_active,
-          faculties:faculty_id (
+      try {
+        console.log('Fetching users data');
+        
+        // Fetch current auth state to check permission level
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.warn('No active session, users will be filtered by RLS');
+        }
+        
+        // Fetch users from the database with their faculty details
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select(`
             id,
             name,
-            department
-          )
-        `)
-        .order('name');
-      
-      if (userError) {
-        console.error('Error fetching users:', userError);
-        throw new Error(userError.message);
+            email,
+            role,
+            avatar,
+            faculty_id,
+            status,
+            last_active,
+            faculties:faculty_id (
+              id,
+              name,
+              department
+            )
+          `)
+          .order('name');
+        
+        if (userError) {
+          console.error('Error fetching users:', userError);
+          throw new Error(userError.message);
+        }
+        
+        console.log('Users data received:', userData);
+        
+        // Transform the data to match our User type
+        return userData.map(user => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role as UserRole,
+          avatar: user.avatar,
+          facultyId: user.faculty_id || undefined,
+          faculty: user.faculties ? {
+            id: user.faculties.id,
+            name: user.faculties.name,
+            department: user.faculties.department
+          } : undefined,
+          status: user.status,
+          lastActive: user.last_active
+        }));
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        throw error;
       }
-      
-      // Transform the data to match our User type
-      return userData.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role as UserRole,
-        avatar: user.avatar,
-        facultyId: user.faculty_id || undefined,
-        faculty: user.faculties ? {
-          id: user.faculties.id,
-          name: user.faculties.name,
-          department: user.faculties.department
-        } : undefined,
-        status: user.status,
-        lastActive: user.last_active
-      }));
-    }
+    },
+    retry: 1, 
+    refetchOnWindowFocus: false
   });
 };

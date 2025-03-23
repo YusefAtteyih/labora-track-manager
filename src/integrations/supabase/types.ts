@@ -444,6 +444,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_admin_or_supervisor: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_lab_supervisor: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
