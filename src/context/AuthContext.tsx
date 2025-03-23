@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
+import { Session } from '@supabase/supabase-js';
 
 // Define user roles with the new hierarchy
 export type UserRole = 'org_admin' | 'lab_supervisor' | 'facility_member' | 'student' | 'visitor';
@@ -28,9 +28,10 @@ export interface User {
   faculty?: Faculty;
 }
 
-// Auth context interface
+// Auth context interface - Updated to include session
 interface AuthContextType {
   user: User | null;
+  session: Session | null; // Added session property
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
@@ -45,6 +46,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null); // Added state for session
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Check if user is already logged in
@@ -53,15 +55,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       console.log('Checking auth state...');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
         console.error('Session error:', sessionError);
         return;
       }
       
-      if (session) {
-        console.log('Session found, fetching user data for ID:', session.user.id);
+      // Store the session
+      setSession(currentSession);
+      
+      if (currentSession) {
+        console.log('Session found, fetching user data for ID:', currentSession.user.id);
         
         const { data: userData, error } = await supabase
           .from('users')
@@ -82,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               parent_id
             )
           `)
-          .eq('id', session.user.id)
+          .eq('id', currentSession.user.id)
           .maybeSingle();
         
         if (error) {
@@ -117,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             description: `Welcome back, ${authUser.name}`,
           });
         } else {
-          console.warn('No user data found for this authenticated session', session.user.id);
+          console.warn('No user data found for this authenticated session', currentSession.user.id);
           // Check if we need to create a user record
           const { data: authUser } = await supabase.auth.getUser();
           if (authUser?.user) {
@@ -186,6 +191,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         return false;
       }
+      
+      // Store the session
+      setSession(data.session);
       
       if (data.user) {
         console.log('Login successful, fetching user data for ID:', data.user.id);
@@ -305,6 +313,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
+      // Store the session
+      setSession(data.session);
+      
       if (data.user) {
         console.log('User signed up with auth ID:', data.user.id, 'creating profile in DB');
         
@@ -363,6 +374,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await supabase.auth.signOut();
       setUser(null);
+      setSession(null); // Clear the session state
       
       toast({
         title: "Logged out",
@@ -385,12 +397,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event, currentSession) => {
         console.log('Auth state changed:', event);
-        if (event === 'SIGNED_IN' && session) {
+        setSession(currentSession); // Update session state
+        if (event === 'SIGNED_IN' && currentSession) {
           checkAuth();
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          setSession(null);
         }
       }
     );
@@ -399,9 +413,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  // Create context value
+  // Create context value - Updated to include session
   const value = {
     user,
+    session,
     isAuthenticated: !!user,
     isLoading,
     login,
