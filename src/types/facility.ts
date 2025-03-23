@@ -13,6 +13,7 @@ export interface Facility {
   features: string[];
   availableFor: ('students' | 'staff' | 'visitors')[];
   requiresApproval: boolean;
+  facultyId?: string | null;
 }
 
 export interface Booking {
@@ -39,6 +40,7 @@ export interface InventoryItem {
   status: string;
   facilityId: string;  // This will store the UUID of the associated facility
   facilityName: string; // This will store the name of the facility for display
+  facultyId?: string | null; // This will store the faculty ID associated with the facility
   created_at?: string;
   updated_at?: string;
 }

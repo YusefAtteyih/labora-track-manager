@@ -72,6 +72,7 @@ export type Database = {
           created_at: string | null
           department: string | null
           description: string | null
+          faculty_id: string | null
           features: string[] | null
           id: string
           image: string | null
@@ -88,6 +89,7 @@ export type Database = {
           created_at?: string | null
           department?: string | null
           description?: string | null
+          faculty_id?: string | null
           features?: string[] | null
           id?: string
           image?: string | null
@@ -104,6 +106,7 @@ export type Database = {
           created_at?: string | null
           department?: string | null
           description?: string | null
+          faculty_id?: string | null
           features?: string[] | null
           id?: string
           image?: string | null
@@ -114,7 +117,15 @@ export type Database = {
           status?: string
           type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "facilities_faculty_id_fkey"
+            columns: ["faculty_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inventory_items: {
         Row: {

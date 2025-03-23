@@ -35,7 +35,7 @@ export const useFacilityData = () => {
     queryFn: async (): Promise<Facility[]> => {
       const { data, error } = await supabase
         .from('facilities')
-        .select('*')
+        .select('*, organizations:faculty_id(id, name)')
         .order('name');
 
       if (error) {
@@ -101,7 +101,8 @@ export const useFacilityData = () => {
           department: facility.department || '',
           features: facility.features || [],
           availableFor: typedAvailableFor,
-          requiresApproval: facility.requires_approval || false
+          requiresApproval: facility.requires_approval || false,
+          facultyId: facility.faculty_id || null
         };
       });
     }

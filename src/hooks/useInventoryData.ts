@@ -44,23 +44,26 @@ export const useInventoryData = () => {
         throw new Error(inventoryError.message);
       }
 
-      // Then fetch all facilities for mapping
+      // Then fetch all facilities with their faculty information
       const { data: facilitiesData, error: facilitiesError } = await supabase
         .from('facilities')
-        .select('id, name');
+        .select('id, name, faculty_id');
       
       if (facilitiesError) {
         console.error('Error fetching facilities:', facilitiesError);
         throw new Error(facilitiesError.message);
       }
 
-      // Create a map of facility IDs to names for quick lookup
+      // Create a map of facility IDs to names and faculty IDs for quick lookup
       const facilityMap = new Map();
       facilitiesData.forEach(facility => {
-        facilityMap.set(facility.id, facility.name);
+        facilityMap.set(facility.id, {
+          name: facility.name,
+          facultyId: facility.faculty_id
+        });
       });
       
-      // Map inventory items to include facility names
+      // Map inventory items to include facility names and faculty IDs
       return inventoryData.map(item => ({
         id: item.id,
         name: item.name,
@@ -70,7 +73,8 @@ export const useInventoryData = () => {
         unit: item.unit,
         status: item.status,
         facilityId: item.facility_id || '',
-        facilityName: item.facility_id ? facilityMap.get(item.facility_id) || 'Unknown Facility' : 'Unassigned',
+        facilityName: item.facility_id ? facilityMap.get(item.facility_id)?.name || 'Unknown Facility' : 'Unassigned',
+        facultyId: item.facility_id ? facilityMap.get(item.facility_id)?.facultyId || null : null,
         created_at: item.created_at,
         updated_at: item.updated_at
       }));

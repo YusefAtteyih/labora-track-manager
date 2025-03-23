@@ -30,43 +30,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { toast } from "@/hooks/use-toast";
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useInventoryData } from '@/hooks/useInventoryData';
 import { useFacilityData } from '@/hooks/useFacilityData';
 import { InventoryItem } from '@/types/facility';
-
-// Item form type
-interface ItemFormData {
-  id?: string;
-  name: string;
-  category: string;
-  location: string;
-  quantity: number;
-  unit: string;
-  facilityId: string;
-}
+import { useOrganizationsData } from '@/hooks/useOrganizationsData';
+import AddInventoryDialog, { InventoryFormData } from '@/components/inventory/AddInventoryDialog';
 
 const Inventory = () => {
   const { user } = useAuth();
   const { data: inventoryItems, isLoading } = useInventoryData();
   const { data: facilities, isLoading: isFacilitiesLoading } = useFacilityData();
+  const { data: organizations, isLoading: isOrganizationsLoading } = useOrganizationsData();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [facilityFilter, setFacilityFilter] = useState('all');
-  const [formData, setFormData] = useState<ItemFormData>({
+  const [facultyFilter, setFacultyFilter] = useState('all');
+  
+  const [formData, setFormData] = useState<InventoryFormData>({
     name: '',
     category: 'Equipment',
     location: '',
@@ -74,22 +59,29 @@ const Inventory = () => {
     unit: 'pc',
     facilityId: '',
   });
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Check if user has admin privileges (org_admin or lab_supervisor)
   const hasAdminPrivileges = user?.role === 'org_admin' || user?.role === 'lab_supervisor';
   
-  // Filter inventory
+  // Filter inventory based on selected filters
   const filteredInventory = inventoryItems?.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           item.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     const matchesFacility = facilityFilter === 'all' || item.facilityId === facilityFilter;
+    const matchesFaculty = facultyFilter === 'all' || item.facultyId === facultyFilter;
     
-    return matchesSearch && matchesCategory && matchesStatus && matchesFacility;
+    return matchesSearch && matchesCategory && matchesStatus && matchesFacility && matchesFaculty;
   }) || [];
+
+  // Get facilities filtered by faculty for the dropdown
+  const filteredFacilities = facultyFilter === 'all' 
+    ? facilities 
+    : facilities?.filter(facility => facility.facultyId === facultyFilter);
 
   const resetForm = () => {
     setFormData({
@@ -101,21 +93,6 @@ const Inventory = () => {
       facilityId: '',
     });
     setIsEditMode(false);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: name === 'quantity' ? parseInt(value) || 0 : value,
-    });
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
   };
 
   const handleAddItem = async () => {
@@ -253,12 +230,12 @@ const Inventory = () => {
     }
   };
 
-  // If facilities are still loading, show a loading message for the whole page
-  if (isFacilitiesLoading) {
+  // If data is still loading, show a loading message for the whole page
+  if (isFacilitiesLoading || isOrganizationsLoading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center h-full">
-          <p className="text-muted-foreground">Loading facilities data...</p>
+          <p className="text-muted-foreground">Loading data...</p>
         </div>
       </MainLayout>
     );
@@ -280,144 +257,18 @@ const Inventory = () => {
           </div>
           
           {hasAdminPrivileges && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Item
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="glass-card">
-                <DialogHeader>
-                  <DialogTitle>
-                    {isEditMode ? 'Edit Inventory Item' : 'Add New Inventory Item'}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {isEditMode 
-                      ? 'Update the details of the inventory item below.' 
-                      : 'Fill in the details of the new inventory item below.'}
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Item Name</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Enter item name"
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="facility">Facility</Label>
-                    <Select
-                      value={formData.facilityId}
-                      onValueChange={(value) => handleSelectChange('facilityId', value)}
-                    >
-                      <SelectTrigger id="facility">
-                        <SelectValue placeholder="Select facility" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {facilities?.map(facility => (
-                          <SelectItem key={facility.id} value={facility.id}>
-                            {facility.name} ({facility.type})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="category">Category</Label>
-                      <Select
-                        value={formData.category}
-                        onValueChange={(value) => handleSelectChange('category', value)}
-                      >
-                        <SelectTrigger id="category">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Equipment">Equipment</SelectItem>
-                          <SelectItem value="Chemicals">Chemicals</SelectItem>
-                          <SelectItem value="Glassware">Glassware</SelectItem>
-                          <SelectItem value="Safety">Safety</SelectItem>
-                          <SelectItem value="Tools">Tools</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        name="location"
-                        value={formData.location}
-                        onChange={handleInputChange}
-                        placeholder="Storage location"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="quantity">Quantity</Label>
-                      <Input
-                        id="quantity"
-                        name="quantity"
-                        type="number"
-                        value={formData.quantity}
-                        onChange={handleInputChange}
-                        min={0}
-                      />
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="unit">Unit</Label>
-                      <Select
-                        value={formData.unit}
-                        onValueChange={(value) => handleSelectChange('unit', value)}
-                      >
-                        <SelectTrigger id="unit">
-                          <SelectValue placeholder="Select unit" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pc">Piece</SelectItem>
-                          <SelectItem value="box">Box</SelectItem>
-                          <SelectItem value="L">Liter</SelectItem>
-                          <SelectItem value="mL">Milliliter</SelectItem>
-                          <SelectItem value="kg">Kilogram</SelectItem>
-                          <SelectItem value="g">Gram</SelectItem>
-                          <SelectItem value="set">Set</SelectItem>
-                          <SelectItem value="unit">Unit</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-                
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => {
-                    setIsDialogOpen(false);
-                    resetForm();
-                  }}>
-                    Cancel
-                  </Button>
-                  <Button onClick={isEditMode ? handleUpdateItem : handleAddItem}>
-                    {isEditMode ? 'Update Item' : 'Add Item'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => {
+              resetForm();
+              setIsDialogOpen(true);
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Item
+            </Button>
           )}
         </div>
         
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -427,6 +278,42 @@ const Inventory = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          
+          <Select
+            value={facultyFilter}
+            onValueChange={setFacultyFilter}
+          >
+            <SelectTrigger id="faculty-filter" className="w-full">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter by faculty" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Faculties</SelectItem>
+              {organizations?.map(org => (
+                <SelectItem key={org.id} value={org.id}>
+                  {org.name} ({org.faculty})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Select
+            value={facilityFilter}
+            onValueChange={setFacilityFilter}
+          >
+            <SelectTrigger id="facility-filter" className="w-full">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter by facility" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Facilities</SelectItem>
+              {filteredFacilities?.map(facility => (
+                <SelectItem key={facility.id} value={facility.id}>
+                  {facility.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           
           <Select
             value={categoryFilter}
@@ -460,24 +347,6 @@ const Inventory = () => {
               <SelectItem value="In Stock">In Stock</SelectItem>
               <SelectItem value="Low Stock">Low Stock</SelectItem>
               <SelectItem value="Out of Stock">Out of Stock</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={facilityFilter}
-            onValueChange={setFacilityFilter}
-          >
-            <SelectTrigger id="facility-filter" className="w-full">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by facility" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Facilities</SelectItem>
-              {facilities?.map(facility => (
-                <SelectItem key={facility.id} value={facility.id}>
-                  {facility.name}
-                </SelectItem>
-              ))}
             </SelectContent>
           </Select>
         </div>
@@ -525,7 +394,7 @@ const Inventory = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {facilities?.find(f => f.id === item.facilityId)?.name || 'Unknown'}
+                        {item.facilityName}
                       </TableCell>
                       <TableCell>{item.location}</TableCell>
                       <TableCell className="text-right">
@@ -579,6 +448,23 @@ const Inventory = () => {
           </div>
         </div>
       </div>
+
+      {/* Add/Edit Inventory Dialog */}
+      {facilities && (
+        <AddInventoryDialog
+          isOpen={isDialogOpen}
+          onClose={() => {
+            setIsDialogOpen(false);
+            resetForm();
+          }}
+          facilities={facilities}
+          formData={formData}
+          setFormData={setFormData}
+          isEditMode={isEditMode}
+          onAddItem={handleAddItem}
+          onUpdateItem={handleUpdateItem}
+        />
+      )}
     </MainLayout>
   );
 };
