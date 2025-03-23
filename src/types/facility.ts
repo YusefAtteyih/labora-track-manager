@@ -28,3 +28,17 @@ export interface Booking {
   attendees: number;
   notes?: string;
 }
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  quantity: number;
+  unit: string;
+  status: string;
+  facilityId: string;
+  facilityName: string;
+  created_at?: string;
+  updated_at?: string;
+}

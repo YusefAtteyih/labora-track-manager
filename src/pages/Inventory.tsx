@@ -43,7 +43,9 @@ import { toast } from "@/hooks/use-toast";
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useInventoryData, InventoryItem } from '@/hooks/useInventoryData';
+import { useInventoryData } from '@/hooks/useInventoryData';
+import { useFacilityData } from '@/hooks/useFacilityData';
+import { InventoryItem } from '@/types/facility';
 
 // Item form type
 interface ItemFormData {
@@ -53,20 +55,24 @@ interface ItemFormData {
   location: string;
   quantity: number;
   unit: string;
+  facilityId: string;
 }
 
 const Inventory = () => {
   const { user } = useAuth();
   const { data: inventoryItems, isLoading } = useInventoryData();
+  const { data: facilities, isLoading: isFacilitiesLoading } = useFacilityData();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [facilityFilter, setFacilityFilter] = useState('all');
   const [formData, setFormData] = useState<ItemFormData>({
     name: '',
     category: 'Equipment',
     location: '',
     quantity: 0,
     unit: 'pc',
+    facilityId: '',
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -80,8 +86,9 @@ const Inventory = () => {
                           item.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesFacility = facilityFilter === 'all' || item.facilityId === facilityFilter;
     
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesCategory && matchesStatus && matchesFacility;
   }) || [];
 
   const resetForm = () => {
@@ -91,6 +98,7 @@ const Inventory = () => {
       location: '',
       quantity: 0,
       unit: 'pc',
+      facilityId: '',
     });
     setIsEditMode(false);
   };
@@ -112,6 +120,16 @@ const Inventory = () => {
 
   const handleAddItem = async () => {
     try {
+      // Validate that a facility is selected
+      if (!formData.facilityId) {
+        toast({
+          title: "Facility Required",
+          description: "Please select a facility for this inventory item",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const status = formData.quantity === 0 ? 'Out of Stock' :
                      formData.quantity < 10 ? 'Low Stock' : 'In Stock';
 
@@ -123,7 +141,8 @@ const Inventory = () => {
           location: formData.location,
           quantity: formData.quantity,
           unit: formData.unit,
-          status: status
+          status: status,
+          facility_id: formData.facilityId
         })
         .select()
         .single();
@@ -151,6 +170,16 @@ const Inventory = () => {
     if (!formData.id) return;
     
     try {
+      // Validate that a facility is selected
+      if (!formData.facilityId) {
+        toast({
+          title: "Facility Required",
+          description: "Please select a facility for this inventory item",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const status = formData.quantity === 0 ? 'Out of Stock' :
                      formData.quantity < 10 ? 'Low Stock' : 'In Stock';
 
@@ -163,6 +192,7 @@ const Inventory = () => {
           quantity: formData.quantity,
           unit: formData.unit,
           status: status,
+          facility_id: formData.facilityId,
           updated_at: new Date().toISOString()
         })
         .eq('id', formData.id);
@@ -194,6 +224,7 @@ const Inventory = () => {
       location: item.location,
       quantity: item.quantity,
       unit: item.unit,
+      facilityId: item.facilityId || '',
     });
     setIsEditMode(true);
     setIsDialogOpen(true);
@@ -221,6 +252,17 @@ const Inventory = () => {
       });
     }
   };
+
+  // If facilities are still loading, show a loading message for the whole page
+  if (isFacilitiesLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading facilities data...</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -267,6 +309,25 @@ const Inventory = () => {
                       onChange={handleInputChange}
                       placeholder="Enter item name"
                     />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="facility">Facility</Label>
+                    <Select
+                      value={formData.facilityId}
+                      onValueChange={(value) => handleSelectChange('facilityId', value)}
+                    >
+                      <SelectTrigger id="facility">
+                        <SelectValue placeholder="Select facility" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {facilities?.map(facility => (
+                          <SelectItem key={facility.id} value={facility.id}>
+                            {facility.name} ({facility.type})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -356,7 +417,7 @@ const Inventory = () => {
         </div>
         
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -401,6 +462,24 @@ const Inventory = () => {
               <SelectItem value="Out of Stock">Out of Stock</SelectItem>
             </SelectContent>
           </Select>
+
+          <Select
+            value={facilityFilter}
+            onValueChange={setFacilityFilter}
+          >
+            <SelectTrigger id="facility-filter" className="w-full">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter by facility" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Facilities</SelectItem>
+              {facilities?.map(facility => (
+                <SelectItem key={facility.id} value={facility.id}>
+                  {facility.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         
         {/* Inventory Table */}
@@ -411,6 +490,7 @@ const Inventory = () => {
                 <TableRow>
                   <TableHead>Item Name</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Facility</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead className="text-right">Quantity</TableHead>
                   <TableHead>Status</TableHead>
@@ -422,14 +502,14 @@ const Inventory = () => {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={hasAdminPrivileges ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={hasAdminPrivileges ? 7 : 6} className="text-center py-8 text-muted-foreground">
                       Loading inventory items...
                     </TableCell>
                   </TableRow>
                 ) : filteredInventory.length === 0 ? (
                   <TableRow>
                     <TableCell 
-                      colSpan={hasAdminPrivileges ? 6 : 5} 
+                      colSpan={hasAdminPrivileges ? 7 : 6} 
                       className="text-center py-8 text-muted-foreground"
                     >
                       No items found matching your search.
@@ -443,6 +523,9 @@ const Inventory = () => {
                         <Badge variant="outline" className="font-normal">
                           {item.category}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {facilities?.find(f => f.id === item.facilityId)?.name || 'Unknown'}
                       </TableCell>
                       <TableCell>{item.location}</TableCell>
                       <TableCell className="text-right">
