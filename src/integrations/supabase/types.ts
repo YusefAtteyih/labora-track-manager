@@ -70,13 +70,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "bookings_facility_id_fkey"
-            columns: ["facility_id"]
-            isOneToOne: false
-            referencedRelation: "facilities"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "bookings_lab_id_fkey"
             columns: ["lab_id"]
             isOneToOne: false
@@ -143,68 +136,6 @@ export type Database = {
             columns: ["lab_id"]
             isOneToOne: false
             referencedRelation: "labs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      facilities: {
-        Row: {
-          available_for: string[] | null
-          capacity: number | null
-          created_at: string | null
-          department: string | null
-          description: string | null
-          faculty_id: string | null
-          features: string[] | null
-          id: string
-          image: string | null
-          location: string | null
-          name: string
-          open_hours: string | null
-          requires_approval: boolean | null
-          status: string
-          type: string
-        }
-        Insert: {
-          available_for?: string[] | null
-          capacity?: number | null
-          created_at?: string | null
-          department?: string | null
-          description?: string | null
-          faculty_id?: string | null
-          features?: string[] | null
-          id?: string
-          image?: string | null
-          location?: string | null
-          name: string
-          open_hours?: string | null
-          requires_approval?: boolean | null
-          status: string
-          type: string
-        }
-        Update: {
-          available_for?: string[] | null
-          capacity?: number | null
-          created_at?: string | null
-          department?: string | null
-          description?: string | null
-          faculty_id?: string | null
-          features?: string[] | null
-          id?: string
-          image?: string | null
-          location?: string | null
-          name?: string
-          open_hours?: string | null
-          requires_approval?: boolean | null
-          status?: string
-          type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "facilities_faculty_id_fkey"
-            columns: ["faculty_id"]
-            isOneToOne: false
-            referencedRelation: "faculties"
             referencedColumns: ["id"]
           },
         ]
@@ -291,13 +222,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "inventory_items_facility_id_fkey"
-            columns: ["facility_id"]
-            isOneToOne: false
-            referencedRelation: "facilities"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "inventory_items_lab_id_fkey"
             columns: ["lab_id"]

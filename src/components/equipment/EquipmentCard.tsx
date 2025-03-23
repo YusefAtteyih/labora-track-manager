@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Wrench, Tag, Layers } from 'lucide-react';
+import { Calendar, Wrench, Tag, Layers, Info } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Equipment } from '@/types/facility';
 
 interface EquipmentCardProps {
@@ -25,6 +26,19 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'available':
+        return <div className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></div>;
+      case 'maintenance':
+        return <div className="w-2 h-2 rounded-full bg-yellow-500 mr-1.5"></div>;
+      case 'booked':
+        return <div className="w-2 h-2 rounded-full bg-red-500 mr-1.5"></div>;
+      default:
+        return <div className="w-2 h-2 rounded-full bg-gray-500 mr-1.5"></div>;
     }
   };
 
@@ -50,9 +64,21 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-xl font-semibold">{equipment.name}</CardTitle>
-          <Badge variant="outline" className={getStatusColor(equipment.status)}>
-            {equipment.status.charAt(0).toUpperCase() + equipment.status.slice(1)}
-          </Badge>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className={`flex items-center ${getStatusColor(equipment.status)}`}>
+                  {getStatusIcon(equipment.status)}
+                  {equipment.status.charAt(0).toUpperCase() + equipment.status.slice(1)}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                {equipment.status === 'available' ? 'Ready to use' : 
+                 equipment.status === 'maintenance' ? 'Under maintenance' : 
+                 'Currently in use'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <Tag className="mr-1 h-3.5 w-3.5" />
@@ -74,6 +100,12 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
               <span>{equipment.model}</span>
             </div>
           )}
+          {equipment.manufacturer && (
+            <div className="flex items-center">
+              <Info className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
+              <span>{equipment.manufacturer}</span>
+            </div>
+          )}
         </div>
       </CardContent>
       
@@ -87,6 +119,7 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
           size="sm" 
           onClick={handleBookNow}
           disabled={equipment.status !== 'available'}
+          className={equipment.status === 'available' ? 'bg-blue-600 hover:bg-blue-700' : ''}
         >
           <Calendar className="mr-2 h-4 w-4" />
           Reserve
