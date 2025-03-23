@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Tool, Tag, Layers } from 'lucide-react';
+import { Calendar, Wrench, Tag, Layers } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -70,7 +70,7 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
           </div>
           {equipment.model && (
             <div className="flex items-center">
-              <Tool className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Wrench className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
               <span>{equipment.model}</span>
             </div>
           )}

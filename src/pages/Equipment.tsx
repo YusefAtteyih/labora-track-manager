@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Tool, Plus, Search, Filter, CircleSlash, CheckCircle2 } from 'lucide-react';
+import { Wrench, Plus, Search, Filter, CircleSlash, CheckCircle2 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,7 +47,7 @@ const Equipment = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold flex items-center">
-              <Tool className="h-8 w-8 mr-2 text-blue-600" />
+              <Wrench className="h-8 w-8 mr-2 text-blue-600" />
               Equipment
             </h1>
             <p className="text-muted-foreground">
