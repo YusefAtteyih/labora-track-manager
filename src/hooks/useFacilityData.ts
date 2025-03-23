@@ -1,9 +1,35 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Facility } from '@/types/facility';
+import { useEffect } from 'react';
 
 export const useFacilityData = () => {
+  const queryClient = useQueryClient();
+
+  // Set up real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('facility-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'facilities'
+        },
+        () => {
+          // Invalidate and refetch when data changes
+          queryClient.invalidateQueries({ queryKey: ['facilities'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['facilities'],
     queryFn: async (): Promise<Facility[]> => {

@@ -113,7 +113,6 @@ export const useReportsData = () => {
         value: totalByType > 0 ? Math.round((value / totalByType) * 100) : 0
       }));
       
-      // Format the data for the reports
       return {
         usageSummary: [
           { label: 'Total Bookings', value: totalBookings.toString(), trend: generateTrend() },
@@ -128,7 +127,7 @@ export const useReportsData = () => {
           { label: 'Cancelled', value: (statusCounts['cancelled'] || 0).toString(), trend: generateTrend() },
         ],
         inventorySummary: [
-          // We'll mock inventory data until we have an inventory table
+          // Still using mock inventory data until we have an inventory table
           { label: 'Total Items', value: '1,245', trend: generateTrend() },
           { label: 'Low Stock Items', value: '37', trend: generateTrend() },
           { label: 'Out of Stock', value: '18', trend: generateTrend() },
@@ -136,13 +135,14 @@ export const useReportsData = () => {
         ],
         usageByType: usageByTypePercentage,
         usageOverTime: [
-          // Mock monthly data until we have historical data
-          { month: 'Jan', laboratories: 65, equipment: 42, classrooms: 38 },
-          { month: 'Feb', laboratories: 58, equipment: 35, classrooms: 42 },
-          { month: 'Mar', laboratories: 70, equipment: 48, classrooms: 40 },
-          { month: 'Apr', laboratories: 75, equipment: 52, classrooms: 45 },
-          { month: 'May', laboratories: 80, equipment: 55, classrooms: 48 },
-          { month: 'Jun', laboratories: 70, equipment: 50, classrooms: 38 },
+          // Monthly data would ideally come from historical records
+          // For now we'll use mock data structured by actual facility types
+          { month: 'Jan', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
+          { month: 'Feb', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
+          { month: 'Mar', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
+          { month: 'Apr', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
+          { month: 'May', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
+          { month: 'Jun', laboratories: typeCounts['lab'] || 0, equipment: typeCounts['equipment'] || 0, classrooms: typeCounts['classroom'] || 0 },
         ],
         bookingsByStatus: Object.entries(statusCounts).map(([status, count]) => ({
           status: status.charAt(0).toUpperCase() + status.slice(1),
@@ -157,6 +157,7 @@ export const useReportsData = () => {
           { category: 'Electronics', inStock: 75, lowStock: 5, outOfStock: 3 },
         ],
       };
-    }
+    },
+    refetchInterval: 60000, // Refresh data every minute
   });
 };

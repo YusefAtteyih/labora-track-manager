@@ -1,6 +1,7 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 export interface Booking {
   id: string;
@@ -25,6 +26,31 @@ export interface Booking {
 }
 
 export const useBookingData = () => {
+  const queryClient = useQueryClient();
+
+  // Set up real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('booking-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings'
+        },
+        () => {
+          // Invalidate and refetch when data changes
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['bookings'],
     queryFn: async (): Promise<Booking[]> => {
@@ -97,8 +123,8 @@ export const useBookingData = () => {
             startDate: booking.start_date,
             endDate: booking.end_date,
             status: typedStatus,
-            purpose: booking.purpose,
-            attendees: booking.attendees,
+            purpose: booking.purpose || '',
+            attendees: booking.attendees || 0,
             notes: booking.notes
           };
         })

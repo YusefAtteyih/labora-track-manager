@@ -1,7 +1,8 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/context/AuthContext';
+import { useEffect } from 'react';
 
 export interface User {
   id: string;
@@ -18,6 +19,31 @@ export interface User {
 }
 
 export const useUserData = () => {
+  const queryClient = useQueryClient();
+
+  // Set up real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'users'
+        },
+        () => {
+          // Invalidate and refetch when data changes
+          queryClient.invalidateQueries({ queryKey: ['users'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['users'],
     queryFn: async (): Promise<User[]> => {

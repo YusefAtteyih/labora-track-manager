@@ -1,6 +1,7 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 export interface Organization {
   id: string;
@@ -13,6 +14,48 @@ export interface Organization {
 }
 
 export const useOrganizationsData = () => {
+  const queryClient = useQueryClient();
+
+  // Set up real-time subscription
+  useEffect(() => {
+    const orgChannel = supabase
+      .channel('org-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'organizations'
+        },
+        () => {
+          // Invalidate and refetch when data changes
+          queryClient.invalidateQueries({ queryKey: ['organizations'] });
+        }
+      )
+      .subscribe();
+      
+    const userChannel = supabase
+      .channel('user-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'users'
+        },
+        () => {
+          // Users table changes can affect organization member counts
+          queryClient.invalidateQueries({ queryKey: ['organizations'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(orgChannel);
+      supabase.removeChannel(userChannel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['organizations'],
     queryFn: async (): Promise<Organization[]> => {
@@ -70,7 +113,7 @@ export const useOrganizationsData = () => {
         department: org.department,
         facilities: facilitiesByDept[org.department] || 0,
         members: usersByOrg[org.id] || 0,
-        equipment: Math.floor(Math.random() * 50) + 10 // Placeholder until we have equipment table
+        equipment: Math.floor(Math.random() * 50) + 10 // Will keep random for equipment until we have equipment table
       }));
     }
   });

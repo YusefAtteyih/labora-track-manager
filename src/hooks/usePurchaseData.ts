@@ -1,6 +1,7 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 export interface PurchaseRequest {
   id: string;
@@ -36,6 +37,48 @@ export interface PurchaseItem {
 }
 
 export const usePurchaseData = () => {
+  const queryClient = useQueryClient();
+
+  // Set up real-time subscription for both purchase requests and items
+  useEffect(() => {
+    const requestsChannel = supabase
+      .channel('purchase-request-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'purchase_requests'
+        },
+        () => {
+          // Invalidate and refetch when data changes
+          queryClient.invalidateQueries({ queryKey: ['purchases'] });
+        }
+      )
+      .subscribe();
+
+    const itemsChannel = supabase
+      .channel('purchase-items-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'purchase_items'
+        },
+        () => {
+          // Invalidate and refetch when data changes
+          queryClient.invalidateQueries({ queryKey: ['purchases'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(requestsChannel);
+      supabase.removeChannel(itemsChannel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['purchases'],
     queryFn: async (): Promise<PurchaseRequest[]> => {
