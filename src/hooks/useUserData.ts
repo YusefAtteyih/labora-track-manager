@@ -23,7 +23,7 @@ export interface User {
 
 export const useUserData = () => {
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
+  const { session, isAuthenticated } = useAuth();
 
   // Set up real-time subscription
   useEffect(() => {
@@ -54,12 +54,11 @@ export const useUserData = () => {
     queryKey: ['users'],
     queryFn: async (): Promise<User[]> => {
       try {
-        console.log('Fetching users data');
+        console.log('Fetching users data, auth state:', isAuthenticated);
         
-        // Fetch current auth state to check permission level
-        const { data: { session } } = await supabase.auth.getSession();
+        // Check if session exists
         if (!session) {
-          console.warn('No active session, users will be filtered by RLS');
+          console.warn('No active session, returning empty users array');
           return [];
         }
         

@@ -18,7 +18,7 @@ export interface Organization {
 
 export const useFacultiesData = () => {
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
+  const { session, isAuthenticated } = useAuth();
 
   // Set up real-time subscription
   useEffect(() => {
@@ -84,12 +84,10 @@ export const useFacultiesData = () => {
     queryFn: async (): Promise<Organization[]> => {
       try {
         // Add logging to debug RLS issues
-        console.log('Fetching faculties data');
+        console.log('Fetching faculties data, auth state:', isAuthenticated);
         
-        // Check session first
-        const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          console.warn('No active session, faculties may be filtered by RLS');
+          console.warn('No active session, returning empty faculties array');
           return [];
         }
         
