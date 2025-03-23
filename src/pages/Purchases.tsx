@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { usePurchaseData, PurchaseRequest } from '@/hooks/usePurchaseData';
+import { useAuth } from '@/context/AuthContext';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,12 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { TabsContent, Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Filter, Plus, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { approvePurchaseRequest, rejectPurchaseRequest, updatePurchaseStatus } from '@/services/purchaseService';
 
 const Purchases = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -45,20 +46,36 @@ const Purchases = () => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-  const handleApprove = (requestId: string) => {
-    // In a real application, this would be a mutation to update the request status
-    toast({
-      title: "Request Approved",
-      description: `Purchase request ${requestId} has been approved.`,
-    });
+  const handleApprove = async (requestId: string) => {
+    if (!user) return;
+    
+    try {
+      await approvePurchaseRequest(requestId, user);
+    } catch (error) {
+      console.error("Error approving request:", error);
+    }
   };
 
-  const handleReject = (requestId: string) => {
-    // In a real application, this would be a mutation to update the request status
-    toast({
-      title: "Request Rejected",
-      description: `Purchase request ${requestId} has been rejected.`,
-    });
+  const handleReject = async (requestId: string) => {
+    if (!user) return;
+    
+    try {
+      // In a real application, you'd show a dialog to get the rejection reason
+      const rejectionReason = "Does not meet budget requirements";
+      await rejectPurchaseRequest(requestId, rejectionReason, user);
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+    }
+  };
+
+  const handleUpdateStatus = async (requestId: string, status: 'ordered' | 'delivered') => {
+    if (!user) return;
+    
+    try {
+      await updatePurchaseStatus(requestId, status, user);
+    } catch (error) {
+      console.error(`Error updating request to ${status}:`, error);
+    }
   };
 
   const getPriorityBadge = (priority: 'high' | 'medium' | 'low') => {
@@ -256,6 +273,26 @@ const Purchases = () => {
                           Reject
                         </Button>
                       </>
+                    )}
+                    {request.status === 'approved' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-8 gap-1 text-blue-600 hover:text-blue-700"
+                        onClick={() => handleUpdateStatus(request.id, 'ordered')}
+                      >
+                        Mark Ordered
+                      </Button>
+                    )}
+                    {request.status === 'ordered' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-8 gap-1 text-purple-600 hover:text-purple-700"
+                        onClick={() => handleUpdateStatus(request.id, 'delivered')}
+                      >
+                        Mark Delivered
+                      </Button>
                     )}
                     <Button size="sm" variant="outline" className="h-8 w-8 p-0">
                       <span className="sr-only">Details</span>
