@@ -9,6 +9,10 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
+import Facilities from "./pages/Facilities";
+import Bookings from "./pages/Bookings";
+import Purchases from "./pages/Purchases";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +81,38 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Inventory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/facilities"
+              element={
+                <ProtectedRoute>
+                  <Facilities />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bookings"
+              element={
+                <ProtectedRoute>
+                  <Bookings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/purchases"
+              element={
+                <ProtectedRoute>
+                  <Purchases />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <Reports />
                 </ProtectedRoute>
               }
             />
