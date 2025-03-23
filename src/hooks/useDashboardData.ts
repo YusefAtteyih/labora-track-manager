@@ -1,4 +1,3 @@
-
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
@@ -237,10 +236,10 @@ export const useDashboardData = () => {
           console.error(`Error fetching bookings for ${dayName}:`, dayBookingsError);
         }
         
-        // Add to booking data
+        // Add to booking data - Fix: Extract the count from the first item in the array
         bookingData.push({
           day: dayName,
-          count: dayBookings ? parseInt(dayBookings.count as unknown as string, 10) : 0
+          count: dayBookings && dayBookings.length > 0 ? parseInt(dayBookings[0].count as unknown as string, 10) : 0
         });
       }
       
@@ -332,9 +331,9 @@ export const useDashboardData = () => {
       return {
         stats: {
           totalInventory: inventoryData.reduce((sum, item) => sum + item.count, 0),
-          activeBookings: activeBookingsData ? parseInt(activeBookingsData.count as unknown as string, 10) : 0,
-          pendingApprovals: pendingApprovalsCount ? parseInt(pendingApprovalsCount.count as unknown as string, 10) : 0,
-          activeUsers: activeUsersData ? parseInt(activeUsersData.count as unknown as string, 10) : 0,
+          activeBookings: activeBookingsData && activeBookingsData.length > 0 ? parseInt(activeBookingsData[0].count as unknown as string, 10) : 0,
+          pendingApprovals: pendingApprovalsCount && pendingApprovalsCount.length > 0 ? parseInt(pendingApprovalsCount[0].count as unknown as string, 10) : 0,
+          activeUsers: activeUsersData && activeUsersData.length > 0 ? parseInt(activeUsersData[0].count as unknown as string, 10) : 0,
         },
         inventoryData,
         bookingData,
