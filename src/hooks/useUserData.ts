@@ -30,7 +30,7 @@ export const useUserData = () => {
     if (!isAuthenticated) return;
     
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel('users-changes')
       .on(
         'postgres_changes',
         {
@@ -56,8 +56,8 @@ export const useUserData = () => {
       try {
         console.log('Fetching users data, auth state:', isAuthenticated);
         
-        // Check if session exists
-        if (!session) {
+        // Check if authenticated
+        if (!isAuthenticated || !session) {
           console.warn('No active session, returning empty users array');
           return [];
         }
@@ -115,8 +115,8 @@ export const useUserData = () => {
         throw error;
       }
     },
-    enabled: isAuthenticated,
-    retry: 1, 
+    enabled: isAuthenticated && !!session,
+    retry: 1,
     refetchOnWindowFocus: false
   });
 };

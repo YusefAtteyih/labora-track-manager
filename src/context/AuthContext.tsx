@@ -1,12 +1,13 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
 
-// Define user roles with the new hierarchy
+// Define user roles
 export type UserRole = 'org_admin' | 'lab_supervisor' | 'facility_member' | 'student' | 'visitor';
 
-// Define faculty type with the new structure
+// Define faculty type
 export interface Faculty {
   id: string;
   name: string;
@@ -17,7 +18,7 @@ export interface Faculty {
   parentId?: string;
 }
 
-// Define user type with faculty
+// Define user type
 export interface User {
   id: string;
   name: string;
@@ -28,10 +29,10 @@ export interface User {
   faculty?: Faculty;
 }
 
-// Auth context interface - Updated to include session
+// Auth context interface
 interface AuthContextType {
   user: User | null;
-  session: Session | null; // Added session property
+  session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
@@ -46,110 +47,71 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null); // Added state for session
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Check if user is already logged in
-  const checkAuth = async () => {
-    setIsLoading(true);
-    
+  // Fetch user profile from database
+  const fetchUserProfile = async (userId: string): Promise<User | null> => {
     try {
-      console.log('Checking auth state...');
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        return;
-      }
-      
-      // Store the session
-      setSession(currentSession);
-      
-      if (currentSession) {
-        console.log('Session found, fetching user data for ID:', currentSession.user.id);
-        
-        const { data: userData, error } = await supabase
-          .from('users')
-          .select(`
+      const { data, error } = await supabase
+        .from('users')
+        .select(`
+          id, 
+          name, 
+          email, 
+          role, 
+          avatar, 
+          faculty_id,
+          faculties:faculty_id (
             id, 
             name, 
-            email, 
-            role, 
-            avatar, 
-            faculty_id,
-            faculties:faculty_id (
-              id, 
-              name, 
-              university,
-              faculty,
-              department,
-              description,
-              parent_id
-            )
-          `)
-          .eq('id', currentSession.user.id)
-          .maybeSingle();
-        
-        if (error) {
-          console.error('Error fetching user data:', error);
-          throw error;
-        }
-        
-        if (userData) {
-          console.log('User data received:', userData);
-          
-          const authUser: User = {
-            id: userData.id,
-            name: userData.name,
-            email: userData.email,
-            role: userData.role as UserRole,
-            avatar: userData.avatar,
-            facultyId: userData.faculty_id,
-            faculty: userData.faculties ? {
-              id: userData.faculties.id,
-              name: userData.faculties.name,
-              university: userData.faculties.university || 'University of Science and Technology',
-              faculty: userData.faculties.faculty || 'Faculty of Science',
-              department: userData.faculties.department,
-              description: userData.faculties.description,
-              parentId: userData.faculties.parent_id
-            } : undefined
-          };
-          
-          setUser(authUser);
-          toast({
-            title: "Authenticated",
-            description: `Welcome back, ${authUser.name}`,
-          });
-        } else {
-          console.warn('No user data found for this authenticated session', currentSession.user.id);
-          // Check if we need to create a user record
-          const { data: authUser } = await supabase.auth.getUser();
-          if (authUser?.user) {
-            console.log('Found auth user but no profile record, attempting to create one');
-            await createUserRecord(authUser.user.id, authUser.user.email || '', 'org_admin');
-            // Try fetching again after creating
-            checkAuth();
-          } else {
-            logout(); // Automatically log out if user data is missing
-          }
-        }
-      } else {
-        console.log('No active session found');
-        setUser(null);
+            university,
+            faculty,
+            department,
+            description,
+            parent_id
+          )
+        `)
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
       }
+      
+      if (!data) {
+        console.warn('No user profile found for ID:', userId);
+        return null;
+      }
+      
+      // Transform to User object
+      return {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role as UserRole,
+        avatar: data.avatar,
+        facultyId: data.faculty_id,
+        faculty: data.faculties ? {
+          id: data.faculties.id,
+          name: data.faculties.name,
+          university: data.faculties.university || 'University of Science and Technology',
+          faculty: data.faculties.faculty || 'Faculty of Science',
+          department: data.faculties.department,
+          description: data.faculties.description,
+          parentId: data.faculties.parent_id
+        } : undefined
+      };
     } catch (error) {
-      console.error('Auth check error:', error);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
+      console.error('Error in fetchUserProfile:', error);
+      return null;
     }
   };
 
-  // Helper function to create a user record if missing
-  const createUserRecord = async (userId: string, email: string, role: UserRole) => {
+  // Create user profile if it doesn't exist
+  const createUserProfile = async (userId: string, email: string, name: string, role: UserRole): Promise<boolean> => {
     try {
-      const name = email.split('@')[0];
       const { error } = await supabase
         .from('users')
         .insert([{ 
@@ -161,13 +123,90 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }]);
         
       if (error) {
-        console.error('Error creating user record:', error);
-        throw error;
+        console.error('Error creating user profile:', error);
+        return false;
       }
-      console.log('User record created successfully');
+      
+      console.log('User profile created successfully');
+      return true;
     } catch (error) {
-      console.error('Error in createUserRecord:', error);
-      throw error;
+      console.error('Error in createUserProfile:', error);
+      return false;
+    }
+  };
+
+  // Check if user is authenticated
+  const checkAuth = async () => {
+    setIsLoading(true);
+    
+    try {
+      console.log('Checking auth state...');
+      // Get current session
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Session error:', error);
+        setUser(null);
+        setSession(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Store session
+      setSession(data.session);
+      
+      // If no session, user is not authenticated
+      if (!data.session) {
+        console.log('No active session found');
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Get user profile
+      const userProfile = await fetchUserProfile(data.session.user.id);
+      
+      if (userProfile) {
+        // User profile exists
+        setUser(userProfile);
+        toast({
+          title: "Authenticated",
+          description: `Welcome back, ${userProfile.name}`,
+        });
+      } else {
+        // Try to create user profile if it doesn't exist
+        const authUser = await supabase.auth.getUser();
+        if (authUser.data?.user) {
+          console.log('Creating missing user profile');
+          const name = authUser.data.user.email?.split('@')[0] || 'User';
+          const success = await createUserProfile(
+            authUser.data.user.id,
+            authUser.data.user.email || '',
+            name,
+            'student'
+          );
+          
+          if (success) {
+            // Fetch the newly created profile
+            const newProfile = await fetchUserProfile(authUser.data.user.id);
+            if (newProfile) {
+              setUser(newProfile);
+            } else {
+              await logout();
+            }
+          } else {
+            await logout();
+          }
+        } else {
+          await logout();
+        }
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setUser(null);
+      setSession(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -183,7 +222,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('Login error from Supabase:', error);
+        console.error('Login error:', error);
         toast({
           title: "Login failed",
           description: error.message,
@@ -192,93 +231,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Store the session
+      // Store session
       setSession(data.session);
       
-      if (data.user) {
-        console.log('Login successful, fetching user data for ID:', data.user.id);
-        // Fetch user's additional data
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select(`
-            id, 
-            name, 
-            email, 
-            role, 
-            avatar, 
-            faculty_id,
-            faculties:faculty_id (
-              id, 
-              name, 
-              university,
-              faculty,
-              department,
-              description,
-              parent_id
-            )
-          `)
-          .eq('id', data.user.id)
-          .maybeSingle();
-          
-        if (userError) {
-          console.error('Error fetching user data after login:', userError);
-          toast({
-            title: "Error",
-            description: "Could not fetch user profile",
-            variant: "destructive",
-          });
-          return false;
-        }
+      // Get user profile
+      const userProfile = await fetchUserProfile(data.user.id);
+      
+      if (userProfile) {
+        // User profile exists
+        setUser(userProfile);
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${userProfile.name}!`,
+        });
+        return true;
+      } else {
+        // Create user profile if it doesn't exist
+        console.log('Creating missing user profile after login');
+        const name = email.split('@')[0];
+        const success = await createUserProfile(
+          data.user.id,
+          email,
+          name,
+          'student'
+        );
         
-        if (userData) {
-          console.log('User profile found:', userData);
-          const authUser: User = {
-            id: userData.id,
-            name: userData.name,
-            email: userData.email,
-            role: userData.role as UserRole,
-            avatar: userData.avatar,
-            facultyId: userData.faculty_id,
-            faculty: userData.faculties ? {
-              id: userData.faculties.id,
-              name: userData.faculties.name,
-              university: userData.faculties.university || 'University of Science and Technology',
-              faculty: userData.faculties.faculty || 'Faculty of Science',
-              department: userData.faculties.department,
-              description: userData.faculties.description,
-              parentId: userData.faculties.parent_id
-            } : undefined
-          };
-          
-          setUser(authUser);
-          
-          toast({
-            title: "Login successful",
-            description: `Welcome back, ${authUser.name}!`,
-          });
-          
-          return true;
-        } else {
-          console.warn('No user profile found, attempting to create one');
-          try {
-            await createUserRecord(data.user.id, data.user.email || '', 'org_admin');
-            // Try fetching again after creating
-            const result = await login(email, password);
-            return result;
-          } catch (createError) {
-            console.error('Failed to create user profile:', createError);
+        if (success) {
+          // Fetch the newly created profile
+          const newProfile = await fetchUserProfile(data.user.id);
+          if (newProfile) {
+            setUser(newProfile);
             toast({
-              title: "Login issue",
-              description: "User profile not found and couldn't be created. Please contact support.",
-              variant: "destructive",
+              title: "Login successful",
+              description: `Welcome, ${newProfile.name}!`,
             });
-            return false;
+            return true;
           }
         }
+        
+        // If we reach here, something went wrong
+        toast({
+          title: "Login issue",
+          description: "Could not retrieve user profile.",
+          variant: "destructive",
+        });
+        await logout();
+        return false;
       }
-      return false;
     } catch (error) {
       console.error('Login error:', error);
+      toast({
+        title: "Login failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setIsLoading(false);
@@ -304,7 +310,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('Registration error from Supabase:', error);
+        console.error('Registration error:', error);
         toast({
           title: "Registration failed",
           description: error.message,
@@ -313,56 +319,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Store the session
+      // Store session
       setSession(data.session);
       
-      if (data.user) {
-        console.log('User signed up with auth ID:', data.user.id, 'creating profile in DB');
-        
-        // Manually create user record to ensure it exists (in case trigger fails)
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert([
-            { 
-              id: data.user.id,
-              name: name, 
-              email: data.user.email,
-              role: role,
-              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=38bdf8&color=fff`
-            }
-          ]);
-
-        if (insertError) {
-          console.error('Error creating user profile:', insertError);
-          toast({
-            title: "Profile creation failed",
-            description: insertError.message,
-            variant: "destructive",
-          });
-          return false;
-        } else {
-          console.log('User profile created successfully');
-          toast({
-            title: "Registration successful",
-            description: `Welcome, ${name}!`,
-          });
-          
-          // Set the user state directly with the data we have
-          const authUser: User = {
-            id: data.user.id,
-            name: name,
-            email: data.user.email || '',
-            role: role,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=38bdf8&color=fff`
-          };
-          
-          setUser(authUser);
-          return true;
-        }
+      if (!data.user) {
+        toast({
+          title: "Registration failed",
+          description: "Could not create user account",
+          variant: "destructive",
+        });
+        return false;
       }
-      return false;
+      
+      // Create user profile
+      const success = await createUserProfile(
+        data.user.id,
+        email,
+        name,
+        role
+      );
+      
+      if (success) {
+        // Set user state
+        const userProfile: User = {
+          id: data.user.id,
+          name: name,
+          email: email,
+          role: role,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=38bdf8&color=fff`
+        };
+        
+        setUser(userProfile);
+        
+        toast({
+          title: "Registration successful",
+          description: `Welcome, ${name}!`,
+        });
+        
+        return true;
+      } else {
+        toast({
+          title: "Registration issue",
+          description: "Account created but profile setup failed",
+          variant: "destructive",
+        });
+        await logout();
+        return false;
+      }
     } catch (error) {
       console.error('Registration error:', error);
+      toast({
+        title: "Registration failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setIsLoading(false);
@@ -374,7 +384,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await supabase.auth.signOut();
       setUser(null);
-      setSession(null); // Clear the session state
+      setSession(null);
       
       toast({
         title: "Logged out",
@@ -390,16 +400,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Check authentication on component mount
+  // Set up auth state listener on component mount
   useEffect(() => {
     console.log('Auth provider mounted, checking auth');
-    checkAuth();
     
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log('Auth state changed:', event);
-        setSession(currentSession); // Update session state
+        setSession(currentSession);
+        
         if (event === 'SIGNED_IN' && currentSession) {
           checkAuth();
         } else if (event === 'SIGNED_OUT') {
@@ -409,12 +419,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
     
+    // Check initial auth state
+    checkAuth();
+    
     // Cleanup subscription on unmount
     return () => subscription.unsubscribe();
   }, []);
 
-  // Create context value - Updated to include session
-  const value = {
+  // Create context value
+  const value: AuthContextType = {
     user,
     session,
     isAuthenticated: !!user,

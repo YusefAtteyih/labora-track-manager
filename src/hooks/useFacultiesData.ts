@@ -4,16 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
-export interface Organization {
+interface Faculty {
   id: string;
   name: string;
-  description: string;
   university: string;
   faculty: string;
   department: string;
-  facilities: number;
-  members: number;
-  equipment: number;
+  description?: string;
+  parentId?: string;
+  createdAt: string;
 }
 
 export const useFacultiesData = () => {
@@ -24,8 +23,8 @@ export const useFacultiesData = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     
-    const orgChannel = supabase
-      .channel('org-changes')
+    const channel = supabase
+      .channel('faculties-changes')
       .on(
         'postgres_changes',
         {
@@ -39,129 +38,68 @@ export const useFacultiesData = () => {
         }
       )
       .subscribe();
-      
-    const userChannel = supabase
-      .channel('user-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'users'
-        },
-        () => {
-          // Users table changes can affect organization member counts
-          queryClient.invalidateQueries({ queryKey: ['faculties'] });
-        }
-      )
-      .subscribe();
-      
-    const labsChannel = supabase
-      .channel('lab-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'labs'
-        },
-        () => {
-          // Labs table changes can affect organization facility counts
-          queryClient.invalidateQueries({ queryKey: ['faculties'] });
-        }
-      )
-      .subscribe();
 
     return () => {
-      supabase.removeChannel(orgChannel);
-      supabase.removeChannel(userChannel);
-      supabase.removeChannel(labsChannel);
+      supabase.removeChannel(channel);
     };
   }, [queryClient, isAuthenticated]);
 
   return useQuery({
     queryKey: ['faculties'],
-    queryFn: async (): Promise<Organization[]> => {
+    queryFn: async (): Promise<Faculty[]> => {
       try {
-        // Add logging to debug RLS issues
         console.log('Fetching faculties data, auth state:', isAuthenticated);
         
-        if (!session) {
+        // Check if authenticated
+        if (!isAuthenticated || !session) {
           console.warn('No active session, returning empty faculties array');
           return [];
         }
         
-        // Fetch organizations data
-        const { data: facultiesData, error: facultiesError } = await supabase
+        // Fetch faculties from database
+        const { data, error } = await supabase
           .from('faculties')
-          .select('id, name, department, university, faculty, description');
-          
-        if (facultiesError) {
-          console.error('Error fetching faculties:', facultiesError);
-          throw new Error(facultiesError.message);
+          .select(`
+            id,
+            name,
+            university,
+            faculty,
+            department,
+            description,
+            parent_id,
+            created_at
+          `)
+          .order('name');
+        
+        if (error) {
+          console.error('Error fetching faculties:', error);
+          throw new Error(error.message);
         }
         
-        console.log('Faculties data received:', facultiesData);
-        
-        if (!facultiesData || facultiesData.length === 0) {
-          console.warn('No faculties data returned from query');
+        if (!data || data.length === 0) {
+          console.log('No faculties data returned from query');
           return [];
         }
         
-        // Fetch labs data to get counts by faculty
-        const { data: labs, error: labsError } = await supabase
-          .from('labs')
-          .select('faculty_id');
-          
-        if (labsError) {
-          console.error('Error fetching labs for faculties:', labsError);
-          throw new Error(labsError.message);
-        }
+        console.log('Faculties data received:', data);
         
-        // Count labs by faculty_id
-        const labsByFaculty = labs?.reduce((acc, lab) => {
-          if (lab.faculty_id) {
-            acc[lab.faculty_id] = (acc[lab.faculty_id] || 0) + 1;
-          }
-          return acc;
-        }, {} as Record<string, number>) || {};
-        
-        // Fetch users count by organization
-        const { data: users, error: usersError } = await supabase
-          .from('users')
-          .select('faculty_id');
-          
-        if (usersError) {
-          console.error('Error fetching users for faculties:', usersError);
-          throw new Error(usersError.message);
-        }
-        
-        // Count users by organization
-        const usersByOrg = users?.reduce((acc, user) => {
-          if (user.faculty_id) {
-            acc[user.faculty_id] = (acc[user.faculty_id] || 0) + 1;
-          }
-          return acc;
-        }, {} as Record<string, number>) || {};
-        
-        // Transform the data to match our Organization type
-        return facultiesData.map(org => ({
-          id: org.id,
-          name: org.name,
-          description: org.description || `${org.name} - ${org.department} department`,
-          university: org.university || 'University of Science and Technology',
-          faculty: org.faculty || 'Faculty of Science',
-          department: org.department,
-          facilities: labsByFaculty[org.id] || 0,
-          members: usersByOrg[org.id] || 0,
-          equipment: Math.floor(Math.random() * 50) + 10 // Will keep random for equipment until we have equipment table
+        // Transform the data to match our Faculty type
+        return data.map(faculty => ({
+          id: faculty.id,
+          name: faculty.name,
+          university: faculty.university || 'University of Science and Technology',
+          faculty: faculty.faculty || 'Faculty of Science',
+          department: faculty.department,
+          description: faculty.description,
+          parentId: faculty.parent_id,
+          createdAt: faculty.created_at
         }));
       } catch (error) {
         console.error('Failed to fetch faculties:', error);
         throw error;
       }
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !!session,
     retry: 1,
     refetchOnWindowFocus: false
   });
