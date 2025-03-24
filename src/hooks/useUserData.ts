@@ -7,7 +7,8 @@ import { User, RawUserData } from '@/types/user';
 import { fetchUsers, fetchUserRole, fetchUserBookings, organizeBookingsByUser } from '@/services/userService';
 import { transformRawUserData } from '@/utils/userTransformers';
 
-export { User } from '@/types/user';
+// Change from `export { User }` to `export type { User }`
+export type { User } from '@/types/user';
 
 export const useUserData = () => {
   const queryClient = useQueryClient();
