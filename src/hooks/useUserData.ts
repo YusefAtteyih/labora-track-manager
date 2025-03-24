@@ -19,6 +19,21 @@ export interface User {
   };
   status?: string;
   lastActive?: string;
+  tcNumber?: string;
+  firstName?: string;
+  lastName?: string;
+  organization?: string;
+  organizationId?: string;
+  department?: string;
+  bookings?: Array<{
+    id: string;
+    purpose: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    labName?: string;
+    equipmentName?: string;
+  }>;
 }
 
 export const useUserData = () => {
@@ -74,6 +89,12 @@ export const useUserData = () => {
             faculty_id,
             status,
             last_active,
+            tc_number,
+            first_name,
+            last_name,
+            organization,
+            organization_id,
+            department,
             faculties:faculty_id (
               id,
               name,
@@ -94,8 +115,66 @@ export const useUserData = () => {
           return [];
         }
         
+        // For admin users, fetch booking history for each user
+        let usersWithBookings = userData;
+        
+        if (session && session.user) {
+          const { data: currentUserData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (currentUserData && currentUserData.role === 'org_admin') {
+            // Get all bookings for all users
+            const { data: bookingsData, error: bookingsError } = await supabase
+              .from('bookings')
+              .select(`
+                id,
+                purpose,
+                status,
+                start_date,
+                end_date,
+                user_id,
+                lab_id,
+                equipment_id,
+                labs:lab_id (name),
+                equipment:equipment_id (name)
+              `)
+              .order('start_date', { ascending: false });
+                
+            if (!bookingsError && bookingsData) {
+              // Group bookings by user_id
+              const bookingsByUser = bookingsData.reduce((acc, booking) => {
+                if (!acc[booking.user_id]) {
+                  acc[booking.user_id] = [];
+                }
+                acc[booking.user_id].push(booking);
+                return acc;
+              }, {});
+              
+              // Add bookings to each user
+              usersWithBookings = userData.map(user => {
+                const userBookings = bookingsByUser[user.id] || [];
+                return {
+                  ...user,
+                  bookings: userBookings.map(b => ({
+                    id: b.id,
+                    purpose: b.purpose,
+                    status: b.status,
+                    startDate: b.start_date,
+                    endDate: b.end_date,
+                    labName: b.labs?.name,
+                    equipmentName: b.equipment?.name
+                  }))
+                };
+              });
+            }
+          }
+        }
+        
         // Transform the data to match our User type
-        return userData.map(user => ({
+        return usersWithBookings.map(user => ({
           id: user.id,
           name: user.name,
           email: user.email,
@@ -108,7 +187,14 @@ export const useUserData = () => {
             department: user.faculties.department
           } : undefined,
           status: user.status,
-          lastActive: user.last_active
+          lastActive: user.last_active,
+          tcNumber: user.tc_number,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          organization: user.organization,
+          organizationId: user.organization_id,
+          department: user.department,
+          bookings: user.bookings
         }));
       } catch (error) {
         console.error('Failed to fetch users:', error);

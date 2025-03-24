@@ -383,35 +383,53 @@ export type Database = {
         Row: {
           avatar: string | null
           created_at: string | null
+          department: string | null
           email: string
           faculty_id: string | null
+          first_name: string | null
           id: string
           last_active: string | null
+          last_name: string | null
           name: string
+          organization: string | null
+          organization_id: string | null
           role: string
           status: string | null
+          tc_number: string | null
         }
         Insert: {
           avatar?: string | null
           created_at?: string | null
+          department?: string | null
           email: string
           faculty_id?: string | null
+          first_name?: string | null
           id: string
           last_active?: string | null
+          last_name?: string | null
           name: string
+          organization?: string | null
+          organization_id?: string | null
           role: string
           status?: string | null
+          tc_number?: string | null
         }
         Update: {
           avatar?: string | null
           created_at?: string | null
+          department?: string | null
           email?: string
           faculty_id?: string | null
+          first_name?: string | null
           id?: string
           last_active?: string | null
+          last_name?: string | null
           name?: string
+          organization?: string | null
+          organization_id?: string | null
           role?: string
           status?: string | null
+          tc_number?: string | null
         }
         Relationships: [
           {
