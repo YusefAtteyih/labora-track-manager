@@ -1,8 +1,8 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "./components/ui/toaster";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Import pages
 import Dashboard from "./pages/Dashboard";
@@ -20,6 +20,7 @@ import NewPurchaseRequest from "./pages/NewPurchaseRequest";
 import Approvals from "./pages/Approvals";
 import Reports from "./pages/Reports";
 import Index from "./pages/Index";
+import { useEffect } from "react";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -31,6 +32,25 @@ const queryClient = new QueryClient({
   },
 });
 
+// PrivateRoute component to protect routes that require authentication
+const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  // If still loading auth state, show nothing or a loading indicator
+  if (isLoading) {
+    return null; // or return a loading spinner
+  }
+
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // If authenticated, render the protected route
+  return <>{children}</>;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -39,22 +59,76 @@ function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/faculties" element={<Faculties />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/labs" element={<Labs />} />
-            <Route path="/labs/new" element={<NewLab />} />
-            <Route path="/labs/:id" element={<FacilityDetails />} />
-            <Route path="/bookings" element={<Bookings />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/purchases" element={<Purchases />} />
-            <Route path="/purchases/new" element={<NewPurchaseRequest />} />
-            <Route path="/approvals" element={<Approvals />} />
-            <Route path="/reports" element={<Reports />} />
+            
+            {/* Protected routes */}
+            <Route path="/dashboard" element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            } />
+            <Route path="/faculties" element={
+              <PrivateRoute>
+                <Faculties />
+              </PrivateRoute>
+            } />
+            <Route path="/users" element={
+              <PrivateRoute>
+                <Users />
+              </PrivateRoute>
+            } />
+            <Route path="/labs" element={
+              <PrivateRoute>
+                <Labs />
+              </PrivateRoute>
+            } />
+            <Route path="/labs/new" element={
+              <PrivateRoute>
+                <NewLab />
+              </PrivateRoute>
+            } />
+            <Route path="/labs/:id" element={
+              <PrivateRoute>
+                <FacilityDetails />
+              </PrivateRoute>
+            } />
+            <Route path="/bookings" element={
+              <PrivateRoute>
+                <Bookings />
+              </PrivateRoute>
+            } />
+            <Route path="/inventory" element={
+              <PrivateRoute>
+                <Inventory />
+              </PrivateRoute>
+            } />
+            <Route path="/purchases" element={
+              <PrivateRoute>
+                <Purchases />
+              </PrivateRoute>
+            } />
+            <Route path="/purchases/new" element={
+              <PrivateRoute>
+                <NewPurchaseRequest />
+              </PrivateRoute>
+            } />
+            <Route path="/approvals" element={
+              <PrivateRoute>
+                <Approvals />
+              </PrivateRoute>
+            } />
+            <Route path="/reports" element={
+              <PrivateRoute>
+                <Reports />
+              </PrivateRoute>
+            } />
+            
+            {/* Redirects */}
             <Route path="/facilities" element={<Navigate to="/labs" replace />} />
             <Route path="/facilities/new" element={<Navigate to="/labs/new" replace />} />
             <Route path="/facilities/:id" element={<Navigate to="/labs/:id" replace />} />
             <Route path="/organizations" element={<Navigate to="/faculties" replace />} />
+            
+            {/* Not found */}
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />

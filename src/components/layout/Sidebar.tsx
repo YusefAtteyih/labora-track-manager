@@ -98,9 +98,10 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();
+    // Explicitly navigate to the login page after logout completes
+    navigate('/login', { replace: true });
   };
 
   const filteredNavItems = navItems.filter(
