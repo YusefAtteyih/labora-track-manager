@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
@@ -380,7 +379,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Logout function
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
     try {
       await supabase.auth.signOut();
       setUser(null);
@@ -391,8 +390,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "You have been successfully logged out",
       });
       
-      // Return true to indicate successful logout
-      return true;
+      // No return value needed as the function is void
     } catch (error) {
       console.error('Logout error:', error);
       toast({
@@ -400,9 +398,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "An error occurred during logout",
         variant: "destructive",
       });
-      
-      // Return false to indicate failed logout
-      return false;
     }
   };
 
