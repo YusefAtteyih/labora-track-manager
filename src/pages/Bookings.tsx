@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar, CheckCircle, Clock, Filter, Plus, Search, Slash, X, XCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -11,13 +10,65 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useBookingData } from '@/hooks/useBookingData';
+import { approveBooking, rejectBooking } from '@/services/bookingService';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 const Bookings = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   
-  const { data: bookings, isLoading, isError } = useBookingData();
+  const { data: bookings, isLoading, isError, refetch } = useBookingData();
+  const { user, isAuthenticated } = useAuth();
+
+  // Check if user has permission to approve/reject (admin or lab supervisor)
+  const canManageBookings = isAuthenticated && user?.role && ['org_admin', 'lab_supervisor'].includes(user.role);
+
+  // Handle approve booking
+  const handleApproveBooking = async (bookingId: string) => {
+    try {
+      setProcessingBookingId(bookingId);
+      await approveBooking(bookingId);
+      toast({
+        title: "Booking Approved",
+        description: "The booking has been successfully approved.",
+      });
+      refetch(); // Refresh the bookings data
+    } catch (error) {
+      console.error("Error approving booking:", error);
+      toast({
+        title: "Approval Failed",
+        description: error instanceof Error ? error.message : "An error occurred while approving the booking.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingBookingId(null);
+    }
+  };
+
+  // Handle reject booking
+  const handleRejectBooking = async (bookingId: string) => {
+    try {
+      setProcessingBookingId(bookingId);
+      await rejectBooking(bookingId);
+      toast({
+        title: "Booking Rejected",
+        description: "The booking has been rejected.",
+      });
+      refetch(); // Refresh the bookings data
+    } catch (error) {
+      console.error("Error rejecting booking:", error);
+      toast({
+        title: "Rejection Failed",
+        description: error instanceof Error ? error.message : "An error occurred while rejecting the booking.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingBookingId(null);
+    }
+  };
 
   // Filter bookings based on search query and filters
   const filteredBookings = bookings?.filter(booking => {
@@ -66,6 +117,7 @@ const Bookings = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
+        {/* Header section */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Bookings</h2>
@@ -79,6 +131,7 @@ const Bookings = () => {
           </Button>
         </div>
 
+        {/* Filter section */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -120,12 +173,14 @@ const Bookings = () => {
           </div>
         </div>
 
+        {/* Tabs section */}
         <Tabs defaultValue="list">
           <TabsList className="mb-4">
             <TabsTrigger value="list">List View</TabsTrigger>
             <TabsTrigger value="calendar">Calendar View</TabsTrigger>
           </TabsList>
 
+          {/* List View Tab */}
           <TabsContent value="list" className="mt-0">
             {isLoading ? (
               <div className="text-center py-10">
@@ -186,12 +241,26 @@ const Bookings = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            {booking.status === 'pending' && (
+                            {booking.status === 'pending' && canManageBookings && (
                               <>
-                                <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-8 w-8 p-0" 
+                                  disabled={processingBookingId === booking.id}
+                                  onClick={() => handleApproveBooking(booking.id)}
+                                  title="Approve booking"
+                                >
                                   <CheckCircle className="h-4 w-4 text-green-500" />
                                 </Button>
-                                <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-8 w-8 p-0"
+                                  disabled={processingBookingId === booking.id}
+                                  onClick={() => handleRejectBooking(booking.id)}
+                                  title="Reject booking"
+                                >
                                   <XCircle className="h-4 w-4 text-red-500" />
                                 </Button>
                               </>
@@ -214,6 +283,7 @@ const Bookings = () => {
             )}
           </TabsContent>
 
+          {/* Calendar View Tab */}
           <TabsContent value="calendar" className="mt-0">
             {isLoading ? (
               <div className="text-center py-10">
@@ -263,6 +333,30 @@ const Bookings = () => {
                               </Avatar>
                               <span className="text-sm">{booking.user.name}</span>
                             </div>
+                            {booking.status === 'pending' && canManageBookings && (
+                              <div className="flex mt-2 gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-6 w-full py-0 text-xs"
+                                  disabled={processingBookingId === booking.id}
+                                  onClick={() => handleApproveBooking(booking.id)}
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-6 w-full py-0 text-xs"
+                                  disabled={processingBookingId === booking.id}
+                                  onClick={() => handleRejectBooking(booking.id)}
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Reject
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
