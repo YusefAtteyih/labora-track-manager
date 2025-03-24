@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
@@ -111,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Create user profile if it doesn't exist
   const createUserProfile = async (userId: string, email: string, name: string, role: UserRole): Promise<boolean> => {
     try {
-      const { error }} = await supabase
+      const { error } = await supabase
         .from('users')
         .insert([{ 
           id: userId,
