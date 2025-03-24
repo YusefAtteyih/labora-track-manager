@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Calendar, CheckCircle, Clock, Filter, Plus, Search, Slash, X, XCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -10,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useBookingData } from '@/hooks/useBookingData';
-import { approveBooking, rejectBooking } from '@/services/bookingService';
+import { approveBooking, rejectBooking, cancelBooking } from '@/services/bookingService';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
@@ -63,6 +64,28 @@ const Bookings = () => {
       toast({
         title: "Rejection Failed",
         description: error instanceof Error ? error.message : "An error occurred while rejecting the booking.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingBookingId(null);
+    }
+  };
+
+  // Handle cancel booking
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      setProcessingBookingId(bookingId);
+      await cancelBooking(bookingId);
+      toast({
+        title: "Booking Cancelled",
+        description: "Your booking has been cancelled.",
+      });
+      refetch(); // Refresh the bookings data
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      toast({
+        title: "Cancellation Failed",
+        description: error instanceof Error ? error.message : "An error occurred while cancelling the booking.",
         variant: "destructive"
       });
     } finally {
@@ -241,28 +264,46 @@ const Bookings = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            {booking.status === 'pending' && canManageBookings && (
+                            {booking.status === 'pending' && (
                               <>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="h-8 w-8 p-0" 
-                                  disabled={processingBookingId === booking.id}
-                                  onClick={() => handleApproveBooking(booking.id)}
-                                  title="Approve booking"
-                                >
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="h-8 w-8 p-0"
-                                  disabled={processingBookingId === booking.id}
-                                  onClick={() => handleRejectBooking(booking.id)}
-                                  title="Reject booking"
-                                >
-                                  <XCircle className="h-4 w-4 text-red-500" />
-                                </Button>
+                                {/* Only show approve/reject buttons for admins and supervisors */}
+                                {canManageBookings && (
+                                  <>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="h-8 w-8 p-0" 
+                                      disabled={processingBookingId === booking.id}
+                                      onClick={() => handleApproveBooking(booking.id)}
+                                      title="Approve booking"
+                                    >
+                                      <CheckCircle className="h-4 w-4 text-green-500" />
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="h-8 w-8 p-0"
+                                      disabled={processingBookingId === booking.id}
+                                      onClick={() => handleRejectBooking(booking.id)}
+                                      title="Reject booking"
+                                    >
+                                      <XCircle className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                  </>
+                                )}
+                                {/* Show cancel button for the user's own bookings */}
+                                {user && user.id.toString() === booking.user.id && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="h-8 w-8 p-0"
+                                    disabled={processingBookingId === booking.id}
+                                    onClick={() => handleCancelBooking(booking.id)}
+                                    title="Cancel booking"
+                                  >
+                                    <Slash className="h-4 w-4 text-gray-500" />
+                                  </Button>
+                                )}
                               </>
                             )}
                             <Button size="sm" variant="outline" className="h-8 w-8 p-0">
@@ -333,28 +374,44 @@ const Bookings = () => {
                               </Avatar>
                               <span className="text-sm">{booking.user.name}</span>
                             </div>
-                            {booking.status === 'pending' && canManageBookings && (
+                            {booking.status === 'pending' && (
                               <div className="flex mt-2 gap-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="h-6 w-full py-0 text-xs"
-                                  disabled={processingBookingId === booking.id}
-                                  onClick={() => handleApproveBooking(booking.id)}
-                                >
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Approve
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="h-6 w-full py-0 text-xs"
-                                  disabled={processingBookingId === booking.id}
-                                  onClick={() => handleRejectBooking(booking.id)}
-                                >
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  Reject
-                                </Button>
+                                {canManageBookings && (
+                                  <>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="h-6 w-full py-0 text-xs"
+                                      disabled={processingBookingId === booking.id}
+                                      onClick={() => handleApproveBooking(booking.id)}
+                                    >
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Approve
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="h-6 w-full py-0 text-xs"
+                                      disabled={processingBookingId === booking.id}
+                                      onClick={() => handleRejectBooking(booking.id)}
+                                    >
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </>
+                                )}
+                                {user && user.id.toString() === booking.user.id && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="h-6 w-full py-0 text-xs"
+                                    disabled={processingBookingId === booking.id}
+                                    onClick={() => handleCancelBooking(booking.id)}
+                                  >
+                                    <Slash className="h-3 w-3 mr-1" />
+                                    Cancel
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </div>
