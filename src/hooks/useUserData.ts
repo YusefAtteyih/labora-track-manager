@@ -154,21 +154,10 @@ export const useUserData = () => {
               }, {});
               
               // Add bookings to each user
-              usersWithBookings = userData.map(user => {
-                const userBookings = bookingsByUser[user.id] || [];
-                return {
-                  ...user,
-                  bookings: userBookings.map(b => ({
-                    id: b.id,
-                    purpose: b.purpose,
-                    status: b.status,
-                    startDate: b.start_date,
-                    endDate: b.end_date,
-                    labName: b.labs?.name,
-                    equipmentName: b.equipment?.name
-                  }))
-                };
-              });
+              usersWithBookings = userData.map(user => ({
+                ...user,
+                bookings: bookingsByUser[user.id] || []
+              }));
             }
           }
         }
@@ -194,7 +183,15 @@ export const useUserData = () => {
           organization: user.organization,
           organizationId: user.organization_id,
           department: user.department,
-          bookings: user.bookings
+          bookings: user.bookings ? user.bookings.map(b => ({
+            id: b.id,
+            purpose: b.purpose,
+            status: b.status,
+            startDate: b.start_date,
+            endDate: b.end_date,
+            labName: b.labs?.name,
+            equipmentName: b.equipment?.name
+          })) : undefined
         }));
       } catch (error) {
         console.error('Failed to fetch users:', error);
