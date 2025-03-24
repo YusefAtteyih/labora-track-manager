@@ -12,15 +12,16 @@ const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({ sidebarOpen, toggle
   return (
     <div className="md:hidden fixed top-4 left-4 z-50">
       <Button
-        variant="ghost"
+        variant="outline"
         size="icon"
-        className="h-10 w-10 rounded-full glass"
+        className="h-10 w-10 rounded-full bg-background shadow-md border-sidebar-border"
         onClick={toggleSidebar}
+        aria-label={sidebarOpen ? "Close menu" : "Open menu"}
       >
         {sidebarOpen ? (
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         ) : (
-          <MenuIcon className="h-4 w-4" />
+          <MenuIcon className="h-5 w-5" />
         )}
       </Button>
     </div>
