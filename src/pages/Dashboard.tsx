@@ -9,6 +9,8 @@ import {
   Clock, 
   ShoppingCart, 
   Users,
+  X,
+  XCircle
 } from 'lucide-react';
 import { 
   Card, 
@@ -33,6 +35,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from "@/hooks/use-toast";
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Skeleton } from '@/components/ui/skeleton';
+import { approveBooking, rejectBooking, cancelBooking } from '@/services/bookingService';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -320,7 +323,7 @@ const Dashboard = () => {
                               className="bg-green-600 hover:bg-green-700"
                               onClick={() => handleApprove(item.id)}
                             >
-                              <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                               Approve
                             </Button>
                           </div>
