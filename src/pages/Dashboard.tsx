@@ -36,6 +36,7 @@ import { toast } from "@/hooks/use-toast";
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Skeleton } from '@/components/ui/skeleton';
 import { approveBooking, rejectBooking, cancelBooking } from '@/services/bookingService';
+import { createPurchaseOrderFromInventory } from '@/services/inventoryService';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -85,6 +86,14 @@ const Dashboard = () => {
     } catch (error) {
       // Error toast is handled in the service function
       console.error("Error cancelling booking:", error);
+    }
+  };
+
+  const handleOrderMore = async (itemId: string, itemName: string) => {
+    try {
+      await createPurchaseOrderFromInventory(itemId, itemName, user);
+    } catch (error) {
+      console.error("Error creating purchase order:", error);
     }
   };
 
@@ -384,12 +393,7 @@ const Dashboard = () => {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => {
-                              toast({
-                                title: "Order placed",
-                                description: `Order for ${item.name} has been created`,
-                              });
-                            }}
+                            onClick={() => handleOrderMore(item.id, item.name)}
                           >
                             Order More
                           </Button>

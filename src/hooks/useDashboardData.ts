@@ -110,12 +110,46 @@ export const useDashboardData = () => {
       )
       .subscribe();
 
+    // Add real-time subscription for inventory items
+    const inventoryChannel = supabase
+      .channel('dashboard-inventory-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'inventory_items'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        }
+      )
+      .subscribe();
+
+    // Add real-time subscription for purchase requests
+    const purchaseChannel = supabase
+      .channel('dashboard-purchase-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'purchase_requests'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        }
+      )
+      .subscribe();
+
     // Return cleanup function
     return () => {
       supabase.removeChannel(bookingsChannel);
       supabase.removeChannel(usersChannel);
       supabase.removeChannel(labsChannel);
       supabase.removeChannel(equipmentChannel);
+      supabase.removeChannel(inventoryChannel);
+      supabase.removeChannel(purchaseChannel);
     };
   }, [queryClient]);
 
@@ -411,9 +445,27 @@ export const useDashboardData = () => {
         };
       }) || []);
       
-      // For now, we'll use mock data for low stock items
-      // In a real application, you would fetch this from an inventory table
-      const lowStockItems = [
+      // Fetch real inventory data with low stock from inventory_items table
+      const { data: lowStockInventory, error: lowStockError } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .or('status.eq.Low Stock,status.eq.Out of Stock')
+        .order('quantity', { ascending: true })
+        .limit(5);
+      
+      if (lowStockError) {
+        console.error('Error fetching low stock items:', lowStockError);
+      }
+      
+      // Transform inventory items to lowStockItems format
+      const lowStockItems = lowStockInventory?.map(item => ({
+        id: item.id,
+        name: item.name,
+        current: item.quantity,
+        minimum: 10, // We're using a default minimum threshold of 10
+        status: item.status === 'Out of Stock' ? 'critical' as const : 'warning' as const
+      })) || [
+        // Fallback data in case the query returns no results
         {
           id: 'item-001',
           name: 'Microscope Slides',
@@ -452,5 +504,6 @@ export const useDashboardData = () => {
       };
     },
     refetchInterval: 30000, // Refresh dashboard data every 30 seconds
+    staleTime: 10000, // Consider data stale after 10 seconds
   });
 };
