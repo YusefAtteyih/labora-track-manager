@@ -36,6 +36,41 @@ export interface User {
   }>;
 }
 
+// Define a type for the raw user data from Supabase
+interface RawUserData {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar: string | null;
+  faculty_id: string | null;
+  status: string | null;
+  last_active: string | null;
+  tc_number: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  organization: string | null;
+  organization_id: string | null;
+  department: string | null;
+  faculties: {
+    id: string;
+    name: string;
+    department: string;
+  } | null;
+}
+
+// Define a type for the raw booking data
+interface RawBookingData {
+  id: string;
+  purpose: string | null;
+  status: string;
+  start_date: string;
+  end_date: string;
+  user_id: string;
+  labs?: { name: string } | null;
+  equipment?: { name: string } | null;
+}
+
 export const useUserData = () => {
   const queryClient = useQueryClient();
   const { session, isAuthenticated } = useAuth();
@@ -116,7 +151,7 @@ export const useUserData = () => {
         }
         
         // For admin users, fetch booking history for each user
-        let usersWithBookings = userData;
+        let usersWithBookings: Array<RawUserData & { bookings?: RawBookingData[] }> = userData as RawUserData[];
         
         if (session && session.user) {
           const { data: currentUserData } = await supabase
@@ -157,7 +192,7 @@ export const useUserData = () => {
               usersWithBookings = userData.map(user => ({
                 ...user,
                 bookings: bookingsByUser[user.id] || []
-              }));
+              })) as Array<RawUserData & { bookings?: RawBookingData[] }>;
             }
           }
         }
@@ -168,24 +203,24 @@ export const useUserData = () => {
           name: user.name,
           email: user.email,
           role: user.role as UserRole,
-          avatar: user.avatar,
+          avatar: user.avatar || undefined,
           facultyId: user.faculty_id || undefined,
           faculty: user.faculties ? {
             id: user.faculties.id,
             name: user.faculties.name,
             department: user.faculties.department
           } : undefined,
-          status: user.status,
-          lastActive: user.last_active,
-          tcNumber: user.tc_number,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          organization: user.organization,
-          organizationId: user.organization_id,
-          department: user.department,
+          status: user.status || undefined,
+          lastActive: user.last_active || undefined,
+          tcNumber: user.tc_number || undefined,
+          firstName: user.first_name || undefined,
+          lastName: user.last_name || undefined,
+          organization: user.organization || undefined,
+          organizationId: user.organization_id || undefined,
+          department: user.department || undefined,
           bookings: user.bookings ? user.bookings.map(b => ({
             id: b.id,
-            purpose: b.purpose,
+            purpose: b.purpose || '',
             status: b.status,
             startDate: b.start_date,
             endDate: b.end_date,
