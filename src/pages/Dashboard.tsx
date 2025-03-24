@@ -41,18 +41,48 @@ const Dashboard = () => {
   // Check if user has admin privileges (org_admin or lab_supervisor)
   const hasAdminPrivileges = user?.role === 'org_admin' || user?.role === 'lab_supervisor';
 
-  const handleApprove = (id: string) => {
-    toast({
-      title: "Approved",
-      description: `Request ${id} has been approved`,
-    });
+  const handleApprove = async (id: string) => {
+    try {
+      await approveBooking(id);
+      toast({
+        title: "Booking Approved",
+        description: "The booking has been successfully approved.",
+      });
+    } catch (error) {
+      console.error("Error approving booking:", error);
+      toast({
+        title: "Approval Failed",
+        description: error instanceof Error ? error.message : "An error occurred while approving the booking.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleReject = (id: string) => {
-    toast({
-      title: "Rejected",
-      description: `Request ${id} has been rejected`,
-    });
+  const handleReject = async (id: string) => {
+    try {
+      await rejectBooking(id);
+      toast({
+        title: "Booking Rejected",
+        description: "The booking has been rejected.",
+      });
+    } catch (error) {
+      console.error("Error rejecting booking:", error);
+      toast({
+        title: "Rejection Failed",
+        description: error instanceof Error ? error.message : "An error occurred while rejecting the booking.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCancelBooking = async (id: string) => {
+    try {
+      await cancelBooking(id);
+      // Toast is handled in the service function
+    } catch (error) {
+      // Error toast is handled in the service function
+      console.error("Error cancelling booking:", error);
+    }
   };
 
   if (error) {
@@ -279,14 +309,18 @@ const Dashboard = () => {
                             <Button 
                               variant="outline" 
                               size="sm"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
                               onClick={() => handleReject(item.id)}
                             >
+                              <XCircle className="h-3.5 w-3.5 mr-1.5" />
                               Reject
                             </Button>
                             <Button 
                               size="sm"
+                              className="bg-green-600 hover:bg-green-700"
                               onClick={() => handleApprove(item.id)}
                             >
+                              <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
                               Approve
                             </Button>
                           </div>
@@ -413,16 +447,26 @@ const Dashboard = () => {
                     <Button 
                       variant={booking.status === 'confirmed' ? "outline" : "secondary"}
                       size="sm"
+                      className={booking.status === 'confirmed' ? "text-red-500 hover:bg-red-50 hover:text-red-700" : ""}
                       onClick={() => {
-                        toast({
-                          title: booking.status === 'confirmed' ? "Booking Canceled" : "Reminder Set",
-                          description: booking.status === 'confirmed' 
-                            ? `Your booking for ${booking.lab} has been canceled` 
-                            : `We'll remind you when ${booking.lab} booking is confirmed`,
-                        });
+                        if (booking.status === 'confirmed') {
+                          handleCancelBooking(booking.id);
+                        } else {
+                          toast({
+                            title: "Reminder Set",
+                            description: `We'll remind you when ${booking.lab} booking is confirmed`,
+                          });
+                        }
                       }}
                     >
-                      {booking.status === 'confirmed' ? 'Cancel' : 'Remind Me'}
+                      {booking.status === 'confirmed' ? (
+                        <>
+                          <X className="h-3.5 w-3.5 mr-1.5" />
+                          Cancel
+                        </>
+                      ) : (
+                        'Remind Me'
+                      )}
                     </Button>
                   </div>
                 ))}

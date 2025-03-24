@@ -179,9 +179,21 @@ export const cancelBooking = async (bookingId: string) => {
       throw new Error("Booking not found or you don't have permission to cancel it");
     }
     
+    // Show success toast immediately after successful cancellation
+    toast({
+      title: "Booking Cancelled",
+      description: "Your booking has been successfully cancelled.",
+    });
+    
     return data[0];
   } catch (error) {
     console.error("Error cancelling booking:", error);
+    // Show error toast
+    toast({
+      title: "Cancellation Failed",
+      description: error instanceof Error ? error.message : "An error occurred while cancelling the booking.",
+      variant: "destructive"
+    });
     throw error;
   }
 };

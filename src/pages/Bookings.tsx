@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar, CheckCircle, Clock, Filter, Plus, Search, Slash, X, XCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -76,18 +75,11 @@ const Bookings = () => {
     try {
       setProcessingBookingId(bookingId);
       await cancelBooking(bookingId);
-      toast({
-        title: "Booking Cancelled",
-        description: "Your booking has been cancelled.",
-      });
+      // Toast is now shown in the service function
       refetch(); // Refresh the bookings data
     } catch (error) {
       console.error("Error cancelling booking:", error);
-      toast({
-        title: "Cancellation Failed",
-        description: error instanceof Error ? error.message : "An error occurred while cancelling the booking.",
-        variant: "destructive"
-      });
+      // Toast is now shown in the service function
     } finally {
       setProcessingBookingId(null);
     }
@@ -272,22 +264,22 @@ const Bookings = () => {
                                     <Button 
                                       size="sm" 
                                       variant="outline" 
-                                      className="h-8 w-8 p-0" 
+                                      className="h-8 w-8 p-0 text-green-500 hover:text-green-700 hover:bg-green-50" 
                                       disabled={processingBookingId === booking.id}
                                       onClick={() => handleApproveBooking(booking.id)}
                                       title="Approve booking"
                                     >
-                                      <CheckCircle className="h-4 w-4 text-green-500" />
+                                      <CheckCircle className="h-4 w-4" />
                                     </Button>
                                     <Button 
                                       size="sm" 
                                       variant="outline" 
-                                      className="h-8 w-8 p-0"
+                                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                                       disabled={processingBookingId === booking.id}
                                       onClick={() => handleRejectBooking(booking.id)}
                                       title="Reject booking"
                                     >
-                                      <XCircle className="h-4 w-4 text-red-500" />
+                                      <XCircle className="h-4 w-4" />
                                     </Button>
                                   </>
                                 )}
@@ -296,17 +288,34 @@ const Bookings = () => {
                                   <Button 
                                     size="sm" 
                                     variant="outline" 
-                                    className="h-8 w-8 p-0"
+                                    className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                                     disabled={processingBookingId === booking.id}
                                     onClick={() => handleCancelBooking(booking.id)}
                                     title="Cancel booking"
                                   >
-                                    <Slash className="h-4 w-4 text-gray-500" />
+                                    <Slash className="h-4 w-4" />
                                   </Button>
                                 )}
                               </>
                             )}
-                            <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                            {/* Add cancel option for approved bookings that are in the future */}
+                            {booking.status === 'approved' && new Date(booking.startDate) > new Date() && user && user.id.toString() === booking.user.id && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                                disabled={processingBookingId === booking.id}
+                                onClick={() => handleCancelBooking(booking.id)}
+                                title="Cancel booking"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-8 w-8 p-0"
+                            >
                               <span className="sr-only">Details</span>
                               <span>···</span>
                             </Button>
@@ -381,7 +390,7 @@ const Bookings = () => {
                                     <Button 
                                       size="sm" 
                                       variant="outline" 
-                                      className="h-6 w-full py-0 text-xs"
+                                      className="h-6 w-full py-0 text-xs text-green-500 hover:text-green-700 hover:bg-green-50"
                                       disabled={processingBookingId === booking.id}
                                       onClick={() => handleApproveBooking(booking.id)}
                                     >
@@ -391,7 +400,7 @@ const Bookings = () => {
                                     <Button 
                                       size="sm" 
                                       variant="outline" 
-                                      className="h-6 w-full py-0 text-xs"
+                                      className="h-6 w-full py-0 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
                                       disabled={processingBookingId === booking.id}
                                       onClick={() => handleRejectBooking(booking.id)}
                                     >
@@ -404,7 +413,7 @@ const Bookings = () => {
                                   <Button 
                                     size="sm" 
                                     variant="outline" 
-                                    className="h-6 w-full py-0 text-xs"
+                                    className="h-6 w-full py-0 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                                     disabled={processingBookingId === booking.id}
                                     onClick={() => handleCancelBooking(booking.id)}
                                   >
@@ -412,6 +421,21 @@ const Bookings = () => {
                                     Cancel
                                   </Button>
                                 )}
+                              </div>
+                            )}
+                            {/* Allow cancellation for approved future bookings */}
+                            {booking.status === 'approved' && new Date(booking.startDate) > new Date() && user && user.id.toString() === booking.user.id && (
+                              <div className="mt-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-6 w-full py-0 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                                  disabled={processingBookingId === booking.id}
+                                  onClick={() => handleCancelBooking(booking.id)}
+                                >
+                                  <X className="h-3 w-3 mr-1" />
+                                  Cancel
+                                </Button>
                               </div>
                             )}
                           </div>
