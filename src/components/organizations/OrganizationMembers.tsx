@@ -21,15 +21,22 @@ const OrganizationMembers = ({ organizationId, organizationName, isOpen, onClose
   const { data: members, isLoading } = useQuery({
     queryKey: ['organization-members', organizationId],
     queryFn: async (): Promise<User[]> => {
+      console.log('Fetching members for organization:', organizationId);
       const { data, error } = await supabase
         .from('users')
         .select('id, name, email, role, avatar')
-        .eq('faculty_id', organizationId)
-        .order('name');
+        .eq('faculty_id', organizationId);
         
       if (error) {
         console.error('Error fetching organization members:', error);
         throw new Error(error.message);
+      }
+      
+      console.log('Members data received:', data);
+      
+      if (!data || data.length === 0) {
+        console.log('No members found for this organization');
+        return [];
       }
       
       return data.map(user => ({
