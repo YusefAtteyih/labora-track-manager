@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Calendar, CheckCircle, Clock, Filter, Plus, Search, Slash, X, XCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -13,12 +14,14 @@ import { useBookingData } from '@/hooks/useBookingData';
 import { approveBooking, rejectBooking, cancelBooking } from '@/services/bookingService';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
+import BookingDialogWrapper from '@/components/bookings/BookingDialogWrapper';
 
 const Bookings = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
+  const [isNewBookingDialogOpen, setIsNewBookingDialogOpen] = useState(false);
   
   const { data: bookings, isLoading, isError, refetch } = useBookingData();
   const { user, isAuthenticated } = useAuth();
@@ -140,7 +143,7 @@ const Bookings = () => {
               View and manage facility and equipment bookings
             </p>
           </div>
-          <Button className="sm:w-auto">
+          <Button className="sm:w-auto" onClick={() => setIsNewBookingDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New Booking
           </Button>
@@ -449,6 +452,12 @@ const Bookings = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* New Booking Dialog */}
+      <BookingDialogWrapper 
+        isOpen={isNewBookingDialogOpen} 
+        onOpenChange={setIsNewBookingDialogOpen}
+      />
     </MainLayout>
   );
 };
