@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Calendar, CheckCircle, Clock, Filter, Plus, Search, Slash, X, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, Filter, Info, Plus, Search, Slash, X, XCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +14,12 @@ import { approveBooking, rejectBooking, cancelBooking } from '@/services/booking
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import BookingDialogWrapper from '@/components/bookings/BookingDialogWrapper';
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from '@/components/ui/popover';
+import { useNavigate } from 'react-router-dom';
 
 const Bookings = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,6 +30,7 @@ const Bookings = () => {
   
   const { data: bookings, isLoading, isError, refetch } = useBookingData();
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   // Check if user has permission to approve/reject (admin or lab supervisor)
   const canManageBookings = isAuthenticated && user?.role && ['org_admin', 'lab_supervisor'].includes(user.role);
@@ -86,6 +92,17 @@ const Bookings = () => {
     } finally {
       setProcessingBookingId(null);
     }
+  };
+
+  // View booking details
+  const handleViewDetails = (bookingId: string) => {
+    // In a real application, this would navigate to a booking details page
+    toast({
+      title: "Viewing booking details",
+      description: `Viewing details for booking ${bookingId}`,
+    });
+    // You can implement navigation to a details page like this:
+    // navigate(`/bookings/${bookingId}`);
   };
 
   // Filter bookings based on search query and filters
@@ -301,7 +318,7 @@ const Bookings = () => {
                                 )}
                               </>
                             )}
-                            {/* Add cancel option for approved bookings that are in the future */}
+                            {/* Allow cancellation for approved future bookings */}
                             {booking.status === 'approved' && new Date(booking.startDate) > new Date() && user && user.id.toString() === booking.user.id && (
                               <Button 
                                 size="sm" 
@@ -314,14 +331,28 @@ const Bookings = () => {
                                 <X className="h-4 w-4" />
                               </Button>
                             )}
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-8 w-8 p-0"
-                            >
-                              <span className="sr-only">Details</span>
-                              <span>···</span>
-                            </Button>
+                            {/* Replace the ellipsis button with a Popover */}
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                                  <span className="sr-only">More options</span>
+                                  <span>···</span>
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-40 p-0" align="end">
+                                <div className="py-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="w-full justify-start px-2 rounded-none h-8"
+                                    onClick={() => handleViewDetails(booking.id)}
+                                  >
+                                    <Info className="h-4 w-4 mr-2" />
+                                    View details
+                                  </Button>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -441,6 +472,18 @@ const Bookings = () => {
                                 </Button>
                               </div>
                             )}
+                            {/* Add a view details button */}
+                            <div className="mt-2">
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-6 w-full py-0 text-xs"
+                                onClick={() => handleViewDetails(booking.id)}
+                              >
+                                <Info className="h-3 w-3 mr-1" />
+                                View details
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
