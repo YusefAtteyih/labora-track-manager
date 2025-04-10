@@ -57,22 +57,29 @@ const FacilityDetails = () => {
     notes: ''
   });
 
-  // Check if the URL includes the book parameter
+  // Check if the URL includes the book parameter and open booking dialog if it does
   useEffect(() => {
+    console.log("Checking URL for booking parameter:", location.search);
     const shouldOpenBookingDialog = new URLSearchParams(location.search).get('book') === 'true';
     if (shouldOpenBookingDialog) {
+      console.log("Opening booking dialog from URL parameter");
       setIsBookingDialogOpen(true);
-      // Clean up the URL
-      navigate(`/facilities/${id}`, { replace: true });
+      // Clean up the URL without triggering a navigation
+      const newUrl = location.pathname;
+      window.history.replaceState({}, '', newUrl);
     }
-  }, [location, navigate, id]);
+  }, [location]);
 
   // Find the facility with the matching id
   useEffect(() => {
     if (facilities && id) {
+      console.log("Looking for facility with ID:", id);
       const foundFacility = facilities.find(facility => facility.id === id);
       if (foundFacility) {
+        console.log("Found facility:", foundFacility.name);
         setFacility(foundFacility);
+      } else {
+        console.log("Facility not found in loaded facilities data");
       }
     }
   }, [facilities, id]);

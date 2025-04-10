@@ -1,5 +1,4 @@
-
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "./components/ui/toaster";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -64,12 +63,19 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Facility redirect component to handle parameter passing
+const FacilityRedirect = () => {
+  const { id } = useParams();
+  const location = useLocation();
+  return <Navigate to={`/labs/${id}${location.search}`} replace />;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-          <PageTracker /> {/* Add the page tracker component */}
+          <PageTracker />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
@@ -139,7 +145,7 @@ function App() {
             {/* Redirects */}
             <Route path="/facilities" element={<Navigate to="/labs" replace />} />
             <Route path="/facilities/new" element={<Navigate to="/labs/new" replace />} />
-            <Route path="/facilities/:id" element={<Navigate to="/labs/:id" replace />} />
+            <Route path="/facilities/:id" element={<FacilityRedirect />} />
             <Route path="/organizations" element={<Navigate to="/faculties" replace />} />
             
             {/* Not found */}
