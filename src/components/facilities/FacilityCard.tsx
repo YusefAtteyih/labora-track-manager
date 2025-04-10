@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Facility } from '@/types/facility';
+import { trackButtonClick, trackEvent } from '@/utils/analytics';
 
 interface FacilityCardProps {
   facility: Facility;
@@ -42,10 +43,19 @@ const FacilityCard: React.FC<FacilityCardProps> = ({ facility }) => {
   };
 
   const handleViewDetails = () => {
+    // Track the view details button click
+    trackButtonClick('view_facility_details', `/facilities/${facility.id}`);
     navigate(`/facilities/${facility.id}`);
   };
 
   const handleBookNow = () => {
+    // Track the booking button click
+    trackEvent('facility_booking_initiated', {
+      facility_id: facility.id,
+      facility_name: facility.name,
+      facility_type: facility.type,
+      facility_status: facility.status
+    });
     navigate(`/facilities/${facility.id}?book=true`);
   };
 
@@ -56,6 +66,7 @@ const FacilityCard: React.FC<FacilityCardProps> = ({ facility }) => {
           src={facility.image} 
           alt={facility.name} 
           className="w-full h-full object-cover transition-transform hover:scale-105"
+          onLoad={() => trackEvent('facility_image_loaded', { facility_id: facility.id })}
         />
         <Badge className="absolute top-2 right-2">{getTypeLabel(facility.type)}</Badge>
       </div>

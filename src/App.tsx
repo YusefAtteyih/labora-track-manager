@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "r
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "./components/ui/toaster";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { useEffect } from "react";
+import { trackPageView } from "./utils/analytics";
 
 // Import pages
 import Dashboard from "./pages/Dashboard";
@@ -20,7 +22,6 @@ import NewPurchaseRequest from "./pages/NewPurchaseRequest";
 import Approvals from "./pages/Approvals";
 import Reports from "./pages/Reports";
 import Index from "./pages/Index";
-import { useEffect } from "react";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -31,6 +32,18 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// PageTracker component to track page views
+const PageTracker = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Track page view when location changes
+    trackPageView(location.pathname);
+  }, [location]);
+  
+  return null;
+};
 
 // PrivateRoute component to protect routes that require authentication
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -56,6 +69,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
+          <PageTracker /> {/* Add the page tracker component */}
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
