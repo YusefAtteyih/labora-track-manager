@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, CheckCircle } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { createBooking, BookingFormData } from '@/services/bookingService';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FacilityBookingDialogProps {
   isOpen: boolean;
@@ -48,6 +49,8 @@ const FacilityBookingDialog: React.FC<FacilityBookingDialogProps> = ({
     attendees: 1,
     notes: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleBookingSubmit = async () => {
     try {
@@ -79,36 +82,44 @@ const FacilityBookingDialog: React.FC<FacilityBookingDialogProps> = ({
       }
 
       // Set form to loading state
-      const submitButton = document.querySelector('button[type="submit"]');
-      if (submitButton instanceof HTMLButtonElement) {
-        submitButton.disabled = true;
-      }
+      setIsSubmitting(true);
 
       console.log("Submitting booking form:", bookingForm);
       
       await createBooking(bookingForm, user);
+      
+      // Set success state
+      setIsSuccess(true);
       
       toast({
         title: "Booking Request Submitted",
         description: "Your booking request has been sent for approval.",
       });
       
-      onOpenChange(false);
-      
-      // Reset submit button
-      if (submitButton instanceof HTMLButtonElement) {
-        submitButton.disabled = false;
-      }
+      // Close dialog after 3 seconds
+      setTimeout(() => {
+        onOpenChange(false);
+        // Reset success state after dialog closes
+        setTimeout(() => {
+          setIsSuccess(false);
+        }, 300);
+      }, 3000);
     } catch (error) {
       console.error("Booking submission error:", error);
-      
-      // Reset submit button
-      const submitButton = document.querySelector('button[type="submit"]');
-      if (submitButton instanceof HTMLButtonElement) {
-        submitButton.disabled = false;
-      }
+      setIsSubmitting(false);
     }
   };
+
+  // Reset states when dialog opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsSubmitting(false);
+      // Small delay before resetting success state to allow animation to complete
+      setTimeout(() => {
+        setIsSuccess(false);
+      }, 300);
+    }
+  }, [isOpen]);
 
   // Update the facilityId whenever it changes in props
   useEffect(() => {
@@ -117,6 +128,28 @@ const FacilityBookingDialog: React.FC<FacilityBookingDialogProps> = ({
       facilityId: facilityId
     }));
   }, [facilityId]);
+
+  // If submission was successful, show success view
+  if (isSuccess) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="mb-4 rounded-full bg-green-100 p-3">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-semibold">Booking Submitted</h2>
+            <p className="mt-2 text-muted-foreground">
+              Your booking request for {facilityName} has been submitted successfully and is awaiting approval.
+            </p>
+            <p className="mt-4 text-sm">
+              The dialog will close automatically in a few seconds.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -129,6 +162,12 @@ const FacilityBookingDialog: React.FC<FacilityBookingDialogProps> = ({
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
+          <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+            <AlertDescription>
+              All booking requests need approval from facility administrators before they are confirmed.
+            </AlertDescription>
+          </Alert>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
@@ -241,11 +280,11 @@ const FacilityBookingDialog: React.FC<FacilityBookingDialogProps> = ({
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button onClick={handleBookingSubmit} type="submit">
-            Submit Booking Request
+          <Button onClick={handleBookingSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit Booking Request"}
           </Button>
         </DialogFooter>
       </DialogContent>
