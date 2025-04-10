@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Clock } from 'lucide-react';
@@ -56,7 +55,9 @@ const FacilityCard: React.FC<FacilityCardProps> = ({ facility }) => {
       facility_type: facility.type,
       facility_status: facility.status
     });
-    navigate(`/facilities/${facility.id}?book=true`);
+    
+    // Fix: Use the correct path pattern for labs instead of facilities
+    navigate(`/labs/${facility.id}?book=true`);
   };
 
   return (
