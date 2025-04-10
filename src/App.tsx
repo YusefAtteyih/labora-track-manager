@@ -20,6 +20,7 @@ import Purchases from "./pages/Purchases";
 import NewPurchaseRequest from "./pages/NewPurchaseRequest";
 import Approvals from "./pages/Approvals";
 import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import Index from "./pages/Index";
 
 // Create a client
@@ -139,6 +140,11 @@ function App() {
             <Route path="/reports" element={
               <PrivateRoute>
                 <Reports />
+              </PrivateRoute>
+            } />
+            <Route path="/settings" element={
+              <PrivateRoute>
+                <Settings />
               </PrivateRoute>
             } />
             
